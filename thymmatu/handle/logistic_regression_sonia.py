@@ -1,7 +1,7 @@
 import os 
 import numpy as np
 import pandas as pd
-from kamapack.utils import tryMakeDir
+from thymmatu.utils import tryMakeDir
 
 # >>>>>>>>>>>>>>>>>>>>>>>
 #  BINARY DATA PROCESS  #

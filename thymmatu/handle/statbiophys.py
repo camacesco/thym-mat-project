@@ -1,10 +1,18 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+'''
+    Statbiophys
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+'''
+
 import os, sys
 import glob
 import numpy as np
 import pandas as pd
 from itertools import groupby
 
-from kamapack.utils import fileScope
+from thymmatu.utils import fileScope
 
 ################
 #  Load Genes  #

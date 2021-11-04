@@ -1,7 +1,9 @@
-# coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
-Francesco Camaglia, June 2020 LPENS
+    Basket Blind Stat (exec)
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
 '''
 
 #####################
@@ -15,8 +17,7 @@ import numpy as np
 import optparse
 from tqdm import tqdm
 
-sys.path.append( os.path.realpath( __file__ ).split('kamapack')[0]  )
-from kamapack.utils import fileScope, tryMakeDir
+from thymmatu.utils import fileScope, tryMakeDir
 
 ##########
 #  MAIN  #
@@ -24,7 +25,7 @@ from kamapack.utils import fileScope, tryMakeDir
 
 def main( ) :
     '''
-    Averages everything in the folder.
+    Averages everything in the `BASKET`.
     '''
         
     parser = optparse.OptionParser( conflict_handler="resolve" )
@@ -32,8 +33,9 @@ def main( ) :
     # >>>>>>>>>>>
     #  OPTIONS  #
     # >>>>>>>>>>>
-    parser.add_option( '-B', '--BASKET', action='store', dest = 'BASKET', metavar='path/to/dir', type="string" )
-    parser.add_option( '-c', '--index_col', action="store", dest = 'index_col', type=int, default=None )
+    parser.add_option( '-B', '--BASKET', action='store', dest='BASKET', metavar='path/to/dir', type="string" )
+    
+    parser.add_option( '-c', '--index_col', action="store", dest='index_col', type=int, default=None )
     parser.add_option( '-h', '--header', action='store', dest='header', default=None  )
     parser.add_option( '-t', '--tag', action="store", dest='tag', default=None )
     parser.add_option( '-s', '--skip', action="store", dest='skiprows', type='int', default=0 )
@@ -49,9 +51,9 @@ def main( ) :
     header = options.header
     skiprows = options.skiprows
     
-    # >>>>>>>>>>>>>>
-    #  INPUT CHECK
-    # >>>>>>>>>>>>>>
+    # >>>>>>>>>>>>>>>
+    #  INPUT CHECK  #
+    # >>>>>>>>>>>>>>>
 
     if tag is None : inputfileList = glob.glob( f"{BASKET}/*.*" )
     else : inputfileList = glob.glob( f"{BASKET}/*{tag}*.*" )
@@ -68,8 +70,8 @@ def main( ) :
     #  OUTPUTFILE  
     PathToOut = f"{BASKET}/STAT"
     tryMakeDir( PathToOut )
-    outputfile = f"{PathToOut}/{tag}." + ('.').join( inputfileList[0].split('.')[ 1 : ] )
-    devstdfile = f"{PathToOut}/{tag}-devStd." + ('.').join( inputfileList[0].split('.')[ 1 : ] )
+    outputfile = f"{PathToOut}/{tag}." + ('.').join( inputfileList[0].split('.')[1:] )
+    devstdfile = f"{PathToOut}/{tag}-devStd." + ('.').join( inputfileList[0].split('.')[1:] )
 
     # >>>>>>>>>>>>>
     #  EXECUTION  #
@@ -79,26 +81,30 @@ def main( ) :
                           compression=compression, index_col=index_col, skiprows=skiprows)
     meanPWR2_df = np.power( mean_df, 2 )
 
-    for i in tqdm( range( 1, N ) ) :
+    for i in tqdm(range(1, N)) :
         
         df = pd.read_csv( inputfileList[ i ], header=header, sep=delimiter, keep_default_na=False,
                          compression=compression, index_col=index_col, skiprows=skiprows ) 
-        mean_df = mean_df.add(df,fill_value=0)
+        mean_df = mean_df.add(df, fill_value=0)
         meanPWR2_df = meanPWR2_df.add(np.power( df, 2 ),fill_value=0)
         
     mean_df /= N # by step normalization
     meanPWR2_df /= N # by step normalization
-    ###
     
     # sample standard deviation
-    devStd_df = np.sqrt(N*(meanPWR2_df-np.power( mean_df, 2))/(N-1) )
+    devStd_df = np.sqrt( N * (meanPWR2_df - np.power(mean_df, 2)) / (N-1) )
 
     #  output index  #
-    if index_col is None : index = False
-    else : index = True     
+    if index_col is None : 
+        index = False
+    else : 
+        index = True   
+        
     #  output header  #
-    if header is None : save_header = False
-    else : save_header = True
+    if header is None : 
+        save_header = False
+    else : 
+        save_header = True
 
     mean_df.to_csv( outputfile, header = save_header,
                    sep=delimiter, compression=compression, index=index )

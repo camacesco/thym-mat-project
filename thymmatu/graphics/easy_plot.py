@@ -1,11 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''
-Easy_Plot Library:
-Francesco Camaglia, LPENS June 2020
+    Easy Plot
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
 '''
 
 import pandas
 import numpy as np
-from kamapack.graphics import unihists as UH
+from thymmatu.graphics import unihists as UH
 
 import matplotlib.pyplot as plt
 
@@ -25,8 +28,8 @@ _kol_ = [ c for c in _kol_dic_.values() ]
 
 '''
 What follows is kind old and should be checked.
-################################################################################################################################
-################################################################################################################################
+##########################################################################################################################
+##########################################################################################################################
 '''
 
 #############

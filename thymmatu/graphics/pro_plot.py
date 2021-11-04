@@ -1,11 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''
-pro_plot Library:
-Francesco Camaglia, LPENS July 2021
+    Pro Plot
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
 '''
 
 import pandas
 import numpy as np
-from kamapack.graphics import unihists as UH
+from thymmatu.graphics import unihists as UH
 
 import matplotlib.pyplot as plt
 

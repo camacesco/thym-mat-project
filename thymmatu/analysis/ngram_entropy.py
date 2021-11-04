@@ -1,12 +1,13 @@
-# coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
-Francesco Camaglia, June 2020 LPENS
+    Easy Plot
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
 
-WARNING: 
-As it is, the program works only on files with the format of generated olga files.
+    WARNING: 
+    As it is, the program works only on files with the format of generated olga files.
 '''
-
 
 #####################
 #  LOADING MODULES  #
@@ -19,10 +20,9 @@ import optparse
 from tqdm import tqdm 
 import multiprocessing
 
-sys.path.append( os.path.realpath( __file__ ).split('kamapack')[0]  )
-from kamapack.handle import ngrams
-from kamapack.utils import tryMakeDir, fileScope
-from kamapack.handle.statbiophys import openOlga
+from thymmatu.handle import ngrams
+from thymmatu.utils import tryMakeDir, fileScope
+from thymmatu.handle.statbiophys import openOlga
 
 ##########
 #  MAIN  #

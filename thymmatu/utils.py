@@ -5,7 +5,7 @@ Common system commands.
 import os, sys
 import operator
 import functools
-
+from itertools import groupby
 
 ###############
 #  FILESCOPE  #
@@ -94,12 +94,6 @@ def tryMakeDir( path_choice ):
         #print('The folder "' + path_choice + '" already exists: directory creation ignored.'  )
 ###
 
-'''
-Utils Module:
-Francesco Camaglia, LPENS February 2020
-'''
-
-from itertools import groupby
 
 ####################
 #  DICT_GENERATOR  #
@@ -110,6 +104,7 @@ def dict_generator( sequences ):
     It reads the received list of sequences (or it cast it to a list) and returns
     the dictionary of recurrency per sequence. 
     '''
+    # WARNING!: use pandas series gorupby(serie).size() instead
     
     sequences = reduceList(list( sequences ))
     sequences.sort()
@@ -118,22 +113,3 @@ def dict_generator( sequences ):
     
     return seq_dict
 ###
-
-
-####################
-#  HIST_GENERATOR  #
-####################
-
-def hist_generator( sequences ):
-    '''
-    It reads the received list of sequences (or it cast it to a list) and returns
-    the vector of recurrencies
-    '''
-     
-    seq_dict = dict_generator( sequences )    
-    # Note: this array's order is meaningless (sequences alphabetically ordered)
-    observations = list( seq_dict.values() )
-    
-    return observations
-###
-

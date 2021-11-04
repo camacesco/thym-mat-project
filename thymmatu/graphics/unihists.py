@@ -1,16 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
-Uniform_Histograms Library:
-Francesco Camaglia, LPENS June 2020
+    Unihists
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
 '''
-
-# coding: utf-8
 
 import numpy as np
 import pandas as pd
 
-from kamapack.graphics import easy_plot
-from kamapack.utils import dict_generator
+from thymmatu.graphics import easy_plot
+from thymmatu.utils import dict_generator
 
 #################
 #  ALBUM CLASS  #

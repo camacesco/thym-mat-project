@@ -1,8 +1,9 @@
-# coding: utf-8
- 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''
-ngrams Module:
-Francesco Camaglia, LPENS June 2020
+    Ngrams
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
 '''
 
 import os, sys
@@ -13,8 +14,8 @@ import pandas as pd
 import itertools
 import multiprocessing
 
-from kamapack.utils import *
-from kamapack.entropy import shannon
+from thymmatu.utils import fileScope, reduceList, dict_generator
+from kamapack.shannon import Experiment
 
 ##################################
 #  DEFAULT ALPHABET DEFINITIONS  #
@@ -193,8 +194,8 @@ class ngram_gear:
     def _experiment_update_( self ) :
         
         categories = np.power( len( _Alphabet_[ self.alph ][0] ), self.num )
-        self.experiment = shannon.experiment( list( self.counts_dict.values ), 
-                                             categories=categories, iscount=True )
+        self.experiment = Experiment( list( self.counts_dict.values ),
+                                     categories=categories, iscount=True )
     ###
     
     # >>>>>>>>>>>>>>>>>>>>>>>>

@@ -1,13 +1,15 @@
-'''
-Francesco Camaglia, LPENS July 2021
-'''
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# coding: utf-8
+'''
+    Scattering
+    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+'''
 
 import pandas
 import numpy as np
 
-from kamapack.utils import dict_generator
+from thymmatu.utils import dict_generator
 
 # LATEX GRAPH DEFAULT: use latex format and fonts
 import matplotlib.pyplot as plt

@@ -6,13 +6,13 @@ with open("README.md", "r") as fh:
 data_files_to_include = [('', ['README.md', 'LICENSE'])]
 
 setuptools.setup(
-    name='kamapack',
-    #url="https://github.com/alfaceor/pygor3",
+    name='thym_mat_project',
+    url="https://github.com/camacesco/thym-mat-project",
     author="Francesco Camaglia",
     author_email="francesco.camaglia@phys.ens.fr",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version='0.0.10',
+    version='0.0.1',
     description='Python package to standard statbiophys analysis.',
     license="GNU GPLv3",
     python_requires='>=3.5',
@@ -23,15 +23,16 @@ setuptools.setup(
         #"multiprocessing",
         "scipy",
         "mpmath",
-        #"sonnia#
+        #"sonnia,
+        "kamapack"
     ],
     packages=setuptools.find_packages(),
     data_files = data_files_to_include,
     include_package_data=True,
     entry_points= {
         'console_scripts' : [
-            'kamapack-ngram_entropy=kamapack.analysis.ngram_entropy:main',
-            'kamapack-folder_stat=kamapack.analysis.folder_blind_stat:main'
+            'thym-mat-ngram_entropy=thymmatu.analysis.ngram_entropy:main',
+            'thym-mat-folder_stat=thymmatu.analysis.bakset_blind_stat:main'
         ],
     }
 )

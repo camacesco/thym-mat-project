@@ -54,62 +54,71 @@ def main( ) :
     # >>>>>>>>>>>>>>>
     #  INPUT CHECK  #
     # >>>>>>>>>>>>>>>
-
-    if tag is None : inputfileList = glob.glob( f"{BASKET}/*.*" )
-    else : inputfileList = glob.glob( f"{BASKET}/*{tag}*.*" )
-
-    inputfileList = [ f for f in inputfileList if "STAT-" not in f ]
-    N = len( inputfileList )
     
-    #  COMPRESSION & DELIMITER 
-    #  infer from extension of first file in list
-    in_scope = fileScope( inputfileList[0] )
-    delimiter = in_scope.delimiter
-    compression = in_scope.compression
-
     #  OUTPUTFILE  
     PathToOut = f"{BASKET}/STAT"
-    tryMakeDir( PathToOut )
-    outputfile = f"{PathToOut}/{tag}." + ('.').join( inputfileList[0].split('.')[1:] )
-    devstdfile = f"{PathToOut}/{tag}-devStd." + ('.').join( inputfileList[0].split('.')[1:] )
-
-    # >>>>>>>>>>>>>
-    #  EXECUTION  #
-    # >>>>>>>>>>>>>           
-
-    mean_df = pd.read_csv(inputfileList[ 0 ], header=header, sep=delimiter, keep_default_na=False,
-                          compression=compression, index_col=index_col, skiprows=skiprows)
-    meanPWR2_df = np.power( mean_df, 2 )
-
-    for i in tqdm(range(1, N)) :
-        
-        df = pd.read_csv( inputfileList[ i ], header=header, sep=delimiter, keep_default_na=False,
-                         compression=compression, index_col=index_col, skiprows=skiprows ) 
-        mean_df = mean_df.add(df, fill_value=0)
-        meanPWR2_df = meanPWR2_df.add(np.power( df, 2 ),fill_value=0)
-        
-    mean_df /= N # by step normalization
-    meanPWR2_df /= N # by step normalization
     
-    # sample standard deviation
-    devStd_df = np.sqrt( N * (meanPWR2_df - np.power(mean_df, 2)) / (N-1) )
-
-    #  output index  #
-    if index_col is None : 
-        index = False
+    if tag is None : 
+        inputfileList = glob.glob( f"{BASKET}/*.*" )
+        outputfile = f"{PathToOut}/mean." + ('.').join( inputfileList[0].split('.')[1:] )
+        devstdfile = f"{PathToOut}/devStd." + ('.').join( inputfileList[0].split('.')[1:] )
     else : 
-        index = True   
+        inputfileList = glob.glob( f"{BASKET}/*{tag}*.*" )
+        outputfile = f"{PathToOut}/{tag}." + ('.').join( inputfileList[0].split('.')[1:] )
+        devstdfile = f"{PathToOut}/{tag}-devStd." + ('.').join( inputfileList[0].split('.')[1:] )
         
-    #  output header  #
-    if header is None : 
-        save_header = False
-    else : 
-        save_header = True
+    inputfileList = [ f for f in inputfileList if "STAT" not in f ]
+    N = len( inputfileList )
+    
+    if N == 0:
+        raise ValueError("Nothing to average on.")
+        
+    else :
+        tryMakeDir( PathToOut )
 
-    mean_df.to_csv( outputfile, header = save_header,
-                   sep=delimiter, compression=compression, index=index )
-    devStd_df.to_csv( devstdfile, header = save_header,
-                     sep=delimiter, compression=compression, index=index )
+        # >>>>>>>>>>>>>
+        #  EXECUTION  #
+        # >>>>>>>>>>>>>       
+
+        #  COMPRESSION & DELIMITER 
+        #  infer from extension of first file in list
+        in_scope = fileScope( inputfileList[0] )
+        delimiter = in_scope.delimiter
+        compression = in_scope.compression
+
+        mean_df = pd.read_csv(inputfileList[ 0 ], header=header, sep=delimiter, keep_default_na=False,
+                              compression=compression, index_col=index_col, skiprows=skiprows)
+        meanPWR2_df = np.power( mean_df, 2 )
+
+        for i in tqdm(range(1, N)) :
+
+            df = pd.read_csv( inputfileList[ i ], header=header, sep=delimiter, keep_default_na=False,
+                             compression=compression, index_col=index_col, skiprows=skiprows ) 
+            mean_df = mean_df.add(df, fill_value=0)
+            meanPWR2_df = meanPWR2_df.add(np.power( df, 2 ),fill_value=0)
+
+        mean_df /= N # by step normalization
+        meanPWR2_df /= N # by step normalization
+
+        # sample standard deviation
+        devStd_df = np.sqrt( N * (meanPWR2_df - np.power(mean_df, 2)) / (N-1) )
+
+        #  output index  #
+        if index_col is None : 
+            index = False
+        else : 
+            index = True   
+
+        #  output header  #
+        if header is None : 
+            save_header = False
+        else : 
+            save_header = True
+
+        mean_df.to_csv( outputfile, header = save_header,
+                       sep=delimiter, compression=compression, index=index )
+        devStd_df.to_csv( devstdfile, header = save_header,
+                         sep=delimiter, compression=compression, index=index )
 
 ###
 

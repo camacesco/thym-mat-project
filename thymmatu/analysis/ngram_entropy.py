@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 '''
-    Easy Plot
     Copyright (C) November 2021 Francesco Camaglia, LPENS 
 
     WARNING: 
@@ -31,7 +30,10 @@ from thymmatu.handle.statbiophys import openOlga
 def main( ) :
     '''
     Evaluete n-grams entropy. Example of usage:
-    > python ngram_entropy.py -n 5 -i file.csv.gz --samples 25   
+    > thym-mat-ngram_entropy -n 5 -i file.csv.gz --samples 25   
+    
+    WARNING: 
+    As it is, the program works only on files with the format of generated olga files.
     '''
     
     parser = optparse.OptionParser( conflict_handler="resolve" )
@@ -41,9 +43,12 @@ def main( ) :
     #####################
     
     parser.add_option( '-n', action='store', dest='num', type="int", help='The "n-grams" length.' )
-    parser.add_option( '-a', '--alphabet', action='store', dest='alph', type="string", default="AA", help="The alphabet of the reads." )
-    parser.add_option( '-M', '--max_categories', action='store', dest='max_categ', default=0, type="int", help="The maximum number of sequences considered." )
-    parser.add_option( '-i', '--inputfile', action="store", dest = 'inputfile', metavar='PATH/TO/FILE', type="string", help='PATH/TO/FILE where Olga sequences are stored.' )
+    parser.add_option( '-a', '--alphabet', action='store', dest='alph', type="string", default="AA",
+                      help="The alphabet of the reads." )
+    parser.add_option( '-M', '--max_seqs', action='store', dest='max_seqs', default=0, type="int",
+                      help="The maximum number of sequences considered." )
+    parser.add_option( '-i', '--inputfile', action="store", dest='inputfile', metavar='PATH/TO/FILE', type="string",
+                      help='PATH/TO/FILE where Olga sequences are stored.' )
 
     ######################
     #  SPECIFIC OPTIONS  #
@@ -52,23 +57,26 @@ def main( ) :
     parser.add_option( '-s', '--skip', action="store", dest="skip", type="int", default=0, help="" )
     parser.add_option( '-B', '--beginning_const', action="store", dest="beg", type="int", default=0, help="" )
     parser.add_option( '-E', '--end_const', action="store", dest="end", type="int", default=0, help="" )
-    parser.add_option( '-u','--unit', action='store', dest='unit_usr', type='choice', choices = [ "ln", "log2", "log10" ], default="log2", help="The unit of the logarithm." )
-    parser.add_option( '--NSBstdDev', action='store_true', dest='NSBstdDev', default=False, help="Wheter to compute NSB std. deviation." )
+    parser.add_option( '-u','--unit', action='store', dest='unit_usr', type='choice',
+                      choices = [ "ln", "log2", "log10" ], default="log2",help="The unit of the logarithm." )
+    parser.add_option( '--NSBstdDev', action='store_true', dest='NSBstdDev', default=False,
+                      help="Wheter to compute NSB std. deviation." )
     
     ##################
     #  USER OPTIONS  #
     ##################
 
-    parser.add_option( '--samples', action='store', dest='n_subSamples', type="int", default=1, help="Number of subsamples (including all dataset)." )
+    parser.add_option( '--samples', action='store', dest='n_subSamples', type="int", default=1,
+                      help="Number of subsamples (including all dataset)." )
     parser.add_option( '-o', '--outputfile', action="store", dest='outputfile', metavar='PATH/TO/FILE', type="string", default=None, help='The file where entropy has to be saved.' )
-    parser.add_option( '--more_entropies', action='store_true', dest='more_entr', default=False, help="Wheter to compute other entropy estimators alongside with NSB." )
+    parser.add_option( '--more_entropies', action='store_true', dest='more_entr', default=False,
+                      help="Wheter to compute other entropy estimators alongside with NSB." )
 
     ######################
     # OPTIONS ASSIGNMENT #
     ######################
 
     options, args = parser.parse_args()
-
     
     # >>>>>>>>>>>>>>>>>>>
     #  LOADING OPTIONS  #
@@ -76,7 +84,7 @@ def main( ) :
     
     num = options.num
     alph = options.alph
-    max_categ = options.max_categ
+    max_seqs = options.max_seqs
     inputfile = options.inputfile
     outputfile = options.outputfile
     n_subSamples = options.n_subSamples
@@ -118,37 +126,42 @@ def main( ) :
     Results = []
     headers = ['K_seq', 'N_ngrams', 'K_obs', 'NSB']
     if NSBstdDev is True : headers = headers + ['NSBstdDev']
-    if more_entr is True : headers = headers + ['ML', 'MM', 'CS']
+    if more_entr is True : headers = headers + ['naive', 'MM', 'CS']
     Results.append( headers )
 
-    ###################
-    #  SEQUENCE FILE  #
-    ###################                   
+    # >>>>>>>>>>>>>>>>>>>>>>
+    #  OPEN SEQUENCE FILE  #
+    # >>>>>>>>>>>>>>>>>>>>>>                
 
     # WARNING!: lack of generality
     df = openOlga( inputfile ).dropna( )
     
     #  subsamples definition
-    if max_categ == 0 : max_categ = len(df)
-    if n_subSamples == 1 : K_vec = [ max_cat ] # option for 1 single measure 
+    if max_seqs == 0 : 
+        max_seqs = len(df)
+        
+    if n_subSamples == 1 : 
+        K_vec = [ max_seqs ] # option for 1 single measure 
+        disable = True
     else :
         # logarithmic subsample sets 
-        K_vec = np.logspace( np.log10( 5e2 ), np.log10( max_categ ), num = n_subSamples ).astype(int)
-    
-    # check for max_categ greater than dataframe and change subsamples
-    if max_categ > len( df ) :
+        K_vec = np.logspace( np.log10( 5e2 ), np.log10( max_seqs ), num=n_subSamples ).astype(int)
+        disable = False
+        
+    # check for max_seqs greater than dataframe and change subsamples
+    if max_seqs > len( df ) :
         K_vec = [ i for i in K_vec if i < len(df) ]
         K_vec.append( len(df) )
 
-    #################
+    # >>>>>>>>>>>>>>>
     #  USER SUMMAR  #
-    #################   
+    # >>>>>>>>>>>>>>>  
 
-    print("> "+str(num)+"grams entropy computation")
-    print("> Alphabet of the sequences: " + ngrams._Alphabet_[alph][1] )
-    print("> Maximum number of clonotypes considered: ", max_categ)
+    print(f"> {num}grams entropy computation")
+    print("> Alphabet of the sequences: ", ngrams._Alphabet_[alph][1] )
+    print("> Maximum number of sequences considered: ", max_seqs)
     print("> Number of subsamples considered: ", n_subSamples)
-    print("> skip: ", skip, "| beginning: ", beg, "| end: ", end)
+    print(f"> skip: {skip}| beginning: {beg}| end: {end}")
     print("> Input file: ", inputfile )
     print("> Output file: ", entropy_file )
     print("> Number of threads: ", multiprocessing.cpu_count() )
@@ -157,43 +170,43 @@ def main( ) :
     #  EXECUTION  #
     ###############
     
-    for subsamp_indx in tqdm( range( 0, len(K_vec), 1 ) ) :
+    for subsamp_indx in tqdm( range(len(K_vec)), total=len(K_vec), desc="Subsample evaluation", disable=disable ) :
         
         n_categ = K_vec[ subsamp_indx ]
-        df_subsamp = df.sample( n = n_categ )   
+        df_subsamp = df.sample( n=n_categ )   
         
         # the subsample counts_list and estimators are computed
         Gear = ngrams.ngram_gear( num=num, alph=alph ) # initilzation of counts dict
-        Gear.counts_dict_update( df_subsamp["aa"].values, 
-                                skip=skip, beg=beg, end=end )
-        thisSample = [ n_categ, Gear.experiment.N, Gear.experiment.obs_categ ]
+        Gear.hist_update( df_subsamp["aa"].values, skip=skip, beg=beg, end=end )
+        gearExp = Gear.experiment
         
-        if NSBstdDev == True :
-            temp = Gear.experiment.entropy( method="NSB", unit=unit_usr, err=True )
+        thisSample = [ n_categ, gearExp.tot_counts, gearExp.obs_n_categ ]
+        
+        if NSBstdDev is True :
+            temp = gearExp.entropy( method="NSB", unit=unit_usr, error=True )
             thisSample.append( temp[0] )
             thisSample.append( temp[1] )
         else :
-            thisSample.append( Gear.experiment.entropy( method="NSB", unit=unit_usr, err=False ) )
+            thisSample.append( gearExp.entropy( method="NSB", unit=unit_usr, error=False ) )
               
-        if more_entr == True :
-            thisSample.append( Gear.experiment.entropy( method="ML", unit=unit_usr ) )
-            thisSample.append( Gear.experiment.entropy( method="MM", unit=unit_usr ) )
-            thisSample.append( Gear.experiment.entropy( method="CS", unit=unit_usr ) )
+        if more_entr is True :
+            thisSample.append( gearExp.entropy( method="naive", unit=unit_usr ) )
+            thisSample.append( gearExp.entropy( method="MM", unit=unit_usr ) )
+            thisSample.append( gearExp.entropy( method="CS", unit=unit_usr ) )
 
         Results.append( thisSample )   
   
     # >>>>>>>>>>>>>>
-    #   CONCLUSION
+    #  CONCLUSION  #
     # >>>>>>>>>>>>>>
 
     # save entropy of subsamples
     pd.DataFrame( Results ).to_csv( entropy_file, sep=",", index=None, header=False )
     # save final dictionary of ngrams count if requested
+    
     Gear.save_file_dict( dict_file )
     
 ###
-
-
 
 ################
 #  EXECUTABLE  #

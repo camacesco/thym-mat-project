@@ -30,8 +30,8 @@ setuptools.setup(
     include_package_data=True,
     entry_points= {
         'console_scripts' : [
-            'thym-mat-ngram_entropy=thymmatu.analysis.ngram_entropy:main',
-            'thym-mat-folder_stat=thymmatu.analysis.basket_blind_stat:main'
+            'thymmatu_ngram_entropy=thymmatu.analysis.ngram_entropy:main',
+            'thymmatu_folder_stat=thymmatu.analysis.basket_blind_stat:main'
         ],
     }
 )

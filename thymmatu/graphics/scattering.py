@@ -6,10 +6,9 @@
     Copyright (C) November 2021 Francesco Camaglia, LPENS 
 '''
 
-import pandas
+import pandas as pd 
 import numpy as np
-
-from thymmatu.utils import dict_generator
+from scipy.stats import pearsonr
 
 # LATEX GRAPH DEFAULT: use latex format and fonts
 import matplotlib.pyplot as plt
@@ -77,7 +76,8 @@ def computeLocalDensity( x, y, xlim=[0,0], ylim=[0,0], n_bins_x=10, n_bins_y=10)
     ind_y = np.floor( ( y - ylim[0] ) / Res_y ).astype(int)
     
     # counting the number of cells in each square of the grid
-    coordinates = dict_generator( zip( ind_y, ind_x ) )
+    temp = pd.Series( zip( ind_y, ind_x ) )
+    coordinates = temp.groupby( temp ).size().to_dict()
     
     # loop on all the grid cells
     LocalCounts = np.zeros( ( n_bins_y, n_bins_x ) )
@@ -101,7 +101,7 @@ def computeLocalDensity( x, y, xlim=[0,0], ylim=[0,0], n_bins_x=10, n_bins_y=10)
 
 def density_scatterplot( data, bins=None, names=None,  density=True, orientation=None,
                         hist=True, my_cmap=cmap1, bisector=True, density_logscale=True,
-                        figsize=None, show_matrix='both' ):
+                        figsize=None, show_matrix='both', Pearson=False ):
     """
     It produces a scatterplot matrix from a pandas data frame <data>.
     
@@ -220,7 +220,8 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
                 axes[i,j].plot( xlim, ylim, lw=1, ls="--", color=_greys_dic_['silver'] )
             if orientation is not None :
                 lreg = compute_gyration_ax(x, y)
-                axes[i,j].plot( xlim, lreg.intercept + lreg.slope * xlim, lw=1, ls="-", color=orientation )
+                axes[i,j].plot( xlim, lreg.intercept + lreg.slope * xlim,
+                               lw=1, ls="-", color=orientation )
                 
         #  DENSITY MAP  #
         if density is True : 
@@ -240,8 +241,14 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
                 lreg_Imshow_slope = lreg.slope * ( yImshowLim[1] * Dxlim ) / ( xImshowLim[1] * Dylim )
                 lreg_Imshow_intercept = ( lreg.intercept + lreg.slope * xlim[0] - ylim[0]) * yImshowLim[1] / Dylim
                 axes[i,j].plot( xImshowLim, lreg_Imshow_intercept + lreg_Imshow_slope * xImshowLim,
-                          lw=1, ls = "-", color=orientation )                         
-
+                               lw=1, ls = "-", color=orientation )    
+                
+            if Pearson is True :
+                r, p = pearsonr(x, y)
+                label = "r=%.2f" % np.round(r,2)
+                axes[i,j].annotate( label, (0.95, 0.1), xycoords='axes fraction',
+                               ha='right', va='center' )
+               
     # >>>>>>>>>>>>>
     #  x/y ticks  #
     # >>>>>>>>>>>>>

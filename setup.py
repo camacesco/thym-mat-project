@@ -22,6 +22,7 @@ setuptools.setup(
         "matplotlib",
         "scipy",
         "mpmath",
+        "tqdm",
         "kamapack",
         #"sonnia",
     ],

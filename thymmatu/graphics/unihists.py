@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 
 from thymmatu.graphics import easy_plot
-from thymmatu.utils import dict_generator
 
 #################
 #  ALBUM CLASS  #
@@ -348,5 +347,12 @@ def _optional_input_check_( n_sets = None, headers = None ) :
     
     return new_headers
 ###
+
+def dict_generator( data ):
+    ''' oldie '''
+    df = pd.Series( data )
+    output = df.groupby( df ).size().to_dict()
+    
+    return output
 
     

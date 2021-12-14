@@ -12,14 +12,51 @@ from thymmatu.graphics import unihists as UH
 
 import matplotlib.pyplot as plt
 
-#from matplotlib import rc
-#rc('font',**{'family':'serif','serif':['Palatino']})
-#rc('text', usetex = False) # Option 
-
 from matplotlib.colors import is_color_like
 import matplotlib.colors as colors
 
 _greys_dic_ = {'signal': '#282828', 'pidgeon': '#606e8c', 'silver': '#c0c0c0' }
+
+import seaborn as sns
+from matplotlib import cm
+from scipy.cluster.hierarchy import linkage, optimal_leaf_ordering
+from scipy.spatial.distance import squareform
+
+
+################
+#  DENDROGRAM  #
+################
+
+def Dendrogram(df, method="ward", cmap=cm.magma, figsize=(8,8), fontsize=30) :
+    '''
+    It reorders a distance matrix `df` according to HAC and plots it with its respective argument.
+    The HAC `method` can be specified.
+    '''
+    
+    condensed_dist_matrix = squareform( df )
+    
+    Z = linkage( condensed_dist_matrix, method=method ) 
+    res_linkage = optimal_leaf_ordering( Z, condensed_dist_matrix )
+    
+    g = sns.clustermap(df, row_linkage=res_linkage, col_linkage=res_linkage, 
+                       figsize=figsize, cmap=cmap )
+    plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+    plt.setp(g.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
+    cax = plt.gcf().axes[-1]
+    cax.tick_params(labelsize=fontsize)
+    for a in g.ax_row_dendrogram.collections:
+        a.set_linewidth(3)
+    for a in g.ax_col_dendrogram.collections:
+        a.set_linewidth(3)
+    g.ax_row_dendrogram.set_visible(False)
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize=fontsize)
+    g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_ymajorticklabels(), fontsize=fontsize)
+    g.cax.yaxis.set_ticks_position("left")
+    g.cax.yaxis.set_label_position('left')
+    dendro_box = g.ax_row_dendrogram.get_position()
+    dendro_box.x0 = (dendro_box.x0 + 2 * dendro_box.x1) / 3 -0.01
+    dendro_box.x1 = dendro_box.x1-0.01
+    g.cax.set_position(dendro_box)
 
 #################
 #  BAR PLOTTER  #

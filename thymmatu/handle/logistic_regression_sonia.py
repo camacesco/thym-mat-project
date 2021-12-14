@@ -135,7 +135,6 @@ class Binary_Data :
 #############################
 
 from sonia.sonia_leftpos_rightpos import SoniaLeftposRightpos
-from kamapack.handle.sonia_one_sided import SoniaOneSided # WARNING!: to be generalized
 
 # to avoid warning due to encoding sonia features
 import warnings
@@ -164,13 +163,7 @@ class ClassifyOnSonia( object ):
             # Default Sonia Left to Right Position model
             self.sonia_model = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model, vj=vj,
                                                     include_indep_genes=include_indep_genes,
-                                                    include_joint_genes=include_joint_genes )
-        elif which_sonia_model in ['left', 'right'] :
-            # Default Sonia Left to Right Position model
-            self.sonia_model = SoniaOneSided( custom_pgen_model=custom_pgen_model, vj=vj,
-                                             include_indep_genes=include_indep_genes,
-                                             include_joint_genes=include_joint_genes, 
-                                             feat_side=which_sonia_model )      
+                                                    include_joint_genes=include_joint_genes )     
         else :
             raise IOError('Unknwon option for `which_sonia_model`.')
         

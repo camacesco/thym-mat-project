@@ -170,9 +170,8 @@ def main( ) :
     #  EXECUTION  #
     ###############
     
-    for subsamp_indx in tqdm( range(len(K_vec)), total=len(K_vec), desc="Subsample evaluation", disable=disable ) :
+    for n_categ in tqdm( K_vec, total=len(K_vec), desc="Subsample evaluation", disable=disable ) :
         
-        n_categ = K_vec[ subsamp_indx ]
         df_subsamp = df.sample( n=n_categ )   
         
         # the subsample counts_list and estimators are computed

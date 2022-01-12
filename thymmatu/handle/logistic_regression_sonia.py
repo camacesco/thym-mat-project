@@ -82,23 +82,23 @@ class Binary_Data :
         '''
         df = pd.DataFrame()
 
-        attach = pd.DataFrame(self.positive[0], columns=['aa','V','J'])
+        attach = pd.DataFrame(self.positive[0])
         attach[['Label','Use']] = '1', 'train'
         df = df.append(attach, ignore_index=True)
 
-        attach = pd.DataFrame(self.positive[1], columns=['aa','V','J'])
+        attach = pd.DataFrame(self.positive[1])
         attach[['Label','Use']] = '1', 'test'
         df = df.append(attach, ignore_index=True)
 
-        attach = pd.DataFrame(self.negative[0], columns=['aa','V','J'])
+        attach = pd.DataFrame(self.negative[0])
         attach[['Label','Use']] = '0', 'train'
         df = df.append(attach, ignore_index=True)
 
-        attach = pd.DataFrame(self.negative[1], columns=['aa','V','J'])
+        attach = pd.DataFrame(self.negative[1])
         attach[['Label','Use']] = '0', 'test'
         df = df.append(attach, ignore_index=True)
 
-        attach = pd.DataFrame(self.shared, columns=['aa','V','J'])
+        attach = pd.DataFrame(self.shared)
         attach[['Label','Use']] = 'shared', 'test'
         df = df.append(attach, ignore_index=True)
         
@@ -114,16 +114,19 @@ class Binary_Data :
         Where to load the dataframe
         '''
         df = pd.read_csv( f'{outpath}/binary_data.csv.gz', compression='gzip', low_memory=False, dtype=str )
-
-        positive_train = df[np.logical_and(df['Label']=='1', df['Use']== 'train' )][['aa','V','J']].values
-        positive_test = df[np.logical_and(df['Label']=='1', df['Use']== 'test' )][['aa','V','J']].values
+        Label_msk = df['Label']=='1'
+        Shared_msk = df['Label']=='shared'
+        Use_msk = df['Use']== 'train'
+        df.drop(columns=['Use', 'Label'], inplace=True)
+        positive_train = df[np.logical_and(Label_msk, Use_msk)].values
+        positive_test = df[np.logical_and(Label_msk, ~Use_msk)].values
         self.positive = [positive_train, positive_test]
         
-        negative_train = df[np.logical_and(df['Label']=='0', df['Use']== 'train' )][['aa','V','J']].values
-        negative_test = df[np.logical_and(df['Label']=='0', df['Use']== 'test' )][['aa','V','J']].values  
+        negative_train = df[np.logical_and(~Label_msk, Use_msk)].values
+        negative_test = df[np.logical_and(~Label_msk, ~Use_msk)].values  
         self.negative = [negative_train, negative_test]
             
-        self.shared = df[np.logical_and(df['Label']=='shared', df['Use']== 'test' )][['aa','V','J']].values
+        self.shared = df[np.logical_and(Shared_msk, ~Use_msk)].values
 
         del df
 ###
@@ -156,19 +159,41 @@ class ClassifyOnSonia( object ):
     def __init__( self, which_sonia_model=None, load_model=None, custom_pgen_model=None, 
                  vj=False, include_indep_genes=False, include_joint_genes=True ) :
         
+        
         if load_model is not None :
-            self.sonia_model = load_model
+            # load model from directory
+            self.sonia_model = SoniaLeftposRightpos( load_dir = load_model )
+            n_features = len(self.sonia_model.features)
             
         elif which_sonia_model == "both" :
             # Default Sonia Left to Right Position model
             self.sonia_model = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model, vj=vj,
                                                     include_indep_genes=include_indep_genes,
-                                                    include_joint_genes=include_joint_genes )     
-        else :
+                                                    include_joint_genes=include_joint_genes ) 
+            n_features = len(self.sonia_model.features)
+            
+        elif which_sonia_model == "alpha+beta" :
+            if len(custom_pgen_model) != 2 :
+                raise IOError('With option `alpha+beta`, option `custom_pgen_model` requires a list with the alpha and the beta model, respectively.')
+            
+            self.sonia_model = [None,None]
+            # Default Sonia Left to Right Position model for Alpha
+            self.sonia_model[0] = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model[0], vj=True,
+                                                       include_indep_genes=include_indep_genes,
+                                                       include_joint_genes=include_joint_genes )   
+            # Default Sonia Left to Right Position model for Beta   
+            self.sonia_model[1] = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model[1], vj=False,
+                                                       include_indep_genes=include_indep_genes,
+                                                       include_joint_genes=include_joint_genes )  
+            n_features = len(self.sonia_model[0].features) + len(self.sonia_model[1].features)
+        else :            
             raise IOError('Unknwon option for `which_sonia_model`.')
         
+        self.which_sonia_model = which_sonia_model
+        
         # Number of feautures associated to each sequence according to the model
-        self.input_size = len(self.sonia_model.features)
+        self.input_size = n_features
+        
     ###
     
     '''
@@ -179,16 +204,23 @@ class ClassifyOnSonia( object ):
     #  encode  #
     # >>>>>>>>>>
 
-    def encode( self, x ):
+    def encode( self, aa_V_J ):
         '''
-        Extract features from sequence in x according to sonia model
+        Extract features from sequence in `aa_V_J` according to sonia model
         '''
         
-        data = np.array( [ self.sonia_model.find_seq_features( d ) for d in x ] )
+        aa_V_J = np.array(aa_V_J)
+        
+        if self.which_sonia_model in ["alpha+beta"] :
+            data = list(map(lambda x : self.sonia_model[0].find_seq_features(x[0:3]) + self.sonia_model[1].find_seq_features(x[4:-1]) , aa_V_J))
+        else :     
+            data = list(map(lambda x : self.sonia_model.find_seq_features(x), aa_V_J))
+            
+        data = np.array( data )
         data_enc = np.zeros( ( len(data), self.input_size ), dtype=np.int8 )
         for i in range( len(data_enc) ): 
             data_enc[ i ][ data[ i ] ] = 1
-        #
+        
         return data_enc
 ###
 

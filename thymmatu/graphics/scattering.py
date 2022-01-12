@@ -12,14 +12,10 @@ from scipy.stats import pearsonr
 
 # LATEX GRAPH DEFAULT: use latex format and fonts
 import matplotlib.pyplot as plt
-from matplotlib import rc
-#rc('font',**{'family':'serif','serif':['Palatino']})
-#rc('text', usetex = False) # Option 
 from matplotlib.colors import is_color_like
-_greys_dic_ = {'signal': '#282828', 'pidgeon': '#606e8c', 'silver': '#c0c0c0' }
-_kol_dic_ = {'cerulean': '#08457e',  'eggplant': '#991199', 'magenta':  '#FF0066', 
-            'mystic-pearl': '#32c6a6', 'flame': '#ff9900', 'azure': '#0064FF', 'chartreuse': '#7fff00'}
-_kol_ = [ c for c in _kol_dic_.values() ]
+SILVER = '#c0c0c0'
+AZURE = '#0064FF'
+PIDGEON = '#606e8c'
 
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 colors = ['#08457e','#0088ff',"#ef5675",'#ffff66']
@@ -101,7 +97,7 @@ def computeLocalDensity( x, y, xlim=[0,0], ylim=[0,0], n_bins_x=10, n_bins_y=10)
 
 def density_scatterplot( data, bins=None, names=None,  density=True, orientation=None,
                         hist=True, my_cmap=cmap1, bisector=True, density_logscale=True,
-                        figsize=None, show_matrix='both', Pearson=False ):
+                        figsize=None, show_matrix='both', fontsize=10, Pearson=False, set_ticks=None ):
     """
     It produces a scatterplot matrix from a pandas data frame <data>.
     
@@ -154,15 +150,16 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
         if not is_color_like(orientation) :
             if orientation != True :
                 print('Warning: selected color for `orientation` is not recognized.')
-            orientation = _greys_dic_['pidgeon']
+            orientation = PIDGEON
             
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #  Define subplot dimensions  #
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>  
     
+    plt.rcParams.update({'font.size': fontsize})
     fig, axes = plt.subplots( nrows=ncols, ncols=ncols, 
                              figsize=figsize, sharex=False, sharey=False )
-    fig.subplots_adjust( hspace=0.05, wspace=0.05 )
+    fig.subplots_adjust( hspace=0.1, wspace=0.1 )
 
     # adjust xlim for binning
     xlim = np.array([min(np.min(data)), max(np.max(data))])
@@ -214,10 +211,10 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
         #  SCATTER PLOT  # 
         if density is False :    
             
-            axes[i,j].scatter( x, y, color=_kol_dic_['azure'], ec=None, marker='.', alpha=0.2, zorder=0 )                    
+            axes[i,j].scatter( x, y, color=AZURE, ec=None, marker='.', alpha=0.2, zorder=0 )                    
             axes[i,j].set_xlim(xlim), axes[i,j].set_ylim(ylim)           
             if bisector is True :
-                axes[i,j].plot( xlim, ylim, lw=1, ls="--", color=_greys_dic_['silver'] )
+                axes[i,j].plot( xlim, ylim, lw=1, ls="--", color=SILVER )
             if orientation is not None :
                 lreg = compute_gyration_ax(x, y)
                 axes[i,j].plot( xlim, lreg.intercept + lreg.slope * xlim,
@@ -234,7 +231,7 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
             axes[i,j].set_xlim(xImshowLim), axes[i,j].set_ylim(yImshowLim)
             
             if bisector == True :
-                axes[i,j].plot( xImshowLim, yImshowLim, lw=1, ls="--", color=_greys_dic_['silver'] )
+                axes[i,j].plot( xImshowLim, yImshowLim, lw=1, ls="--", color=SILVER )
                 
             if orientation is not None :
                 lreg = compute_gyration_ax(x, y)
@@ -253,7 +250,14 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
     #  x/y ticks  #
     # >>>>>>>>>>>>>
     
-    ticks_pos = np.linspace( 0.1, 0.9, 3 )
+    if set_ticks is None :
+        ticks_pos = np.linspace( 0.1, 0.9, 3 )
+        ticks_x = ticks_pos * Dxlim + xlim[0]
+        ticks_y = ticks_pos * Dylim + ylim[0]
+    else :
+        ticks_x = set_ticks
+        ticks_y = set_ticks   
+        ticks_pos = ( set_ticks - xlim[0] ) / Dxlim
     
     for ax in axes.flat:            
         
@@ -265,8 +269,6 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
 
             if ax.is_first_col() : ax.yaxis.set_ticks_position('left')
             else : ax.yaxis.set_ticks_position('right')
-
-            ticks_y = ticks_pos * Dylim + ylim[0]
 
             if density == True : ax.set_yticks( ticks_pos * bins )
             else : ax.set_yticks( ticks_y )
@@ -282,8 +284,6 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
 
             if ax.is_first_row() : ax.xaxis.set_ticks_position('top') 
             else : ax.xaxis.set_ticks_position('bottom') 
-
-            ticks_x = ticks_pos * Dxlim + xlim[0]
 
             if density == True : ax.set_xticks( ticks_pos * bins )
             else : ax.set_xticks( ticks_x )
@@ -336,8 +336,7 @@ def density_scatterplot( data, bins=None, names=None,  density=True, orientation
         else : #  Plot histograms and set labels  #
             h, b = np.histogram( data[ label ], bins=np.linspace( xlim[0], xlim[-1], bins ) )
             axes[i,i].set_yscale("log")
-            axes[i,i].plot( b[:-1] + 0.5 * ( b[1] - b[0] ), h, 
-                           color = _kol_dic_['azure'] ) 
+            axes[i,i].plot( b[:-1] + 0.5 * ( b[1] - b[0] ), h, color=AZURE ) 
             axes[i,i].set_xlim(xlim)
             
     if hist == False :

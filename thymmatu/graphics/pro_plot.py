@@ -3,17 +3,17 @@
 
 '''
     Pro Plot
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
+    Adapatations from Giulio Isacchini : https://github.com/statbiophys/soNNia/blob/6d99a55cb8c6b71f0ef110f1eefccbd71f789d8d/sonnia/compare_repertoires.py
 '''
 
-import pandas
 import numpy as np
-from thymmatu.graphics import unihists as UH
 
 import matplotlib.pyplot as plt
 
-from matplotlib.colors import is_color_like
-import matplotlib.colors as colors
+from matplotlib import cm
+from matplotlib.colors import is_color_like, Normalize
+from itertools import product
 
 _greys_dic_ = {'signal': '#282828', 'pidgeon': '#606e8c', 'silver': '#c0c0c0' }
 
@@ -263,3 +263,43 @@ def curvePlotter( dataframe, colors,
 
     return ax
 ###
+
+
+###################
+#  HEATMAP TABLE  #
+###################
+
+def heatmap_table( df, cmap=cm.magma, norm=Normalize(vmin=0, vmax=1), figsize=None, digits=3, diagonal=False ) :
+    
+    assert np.all( df.columns == df.index )
+        
+    fig, ax = plt.subplots( figsize=figsize )
+    _ = ax.imshow( df.values, cmap=cmap, norm=norm, aspect='auto', interpolation='nearest', origin='upper' )
+    df = df.fillna("NaN")
+
+    for idxNeg, idxPos in product( np.arange(len(df)), np.arange(len(df)) ) :    
+        LabPos = df.index[idxPos]
+        LabNeg = df.index[idxNeg]
+        
+        note = df.at[LabPos,LabNeg]
+        if note != "NaN" :
+            note_fmt = f"{note:.{digits}f}"
+            ax.annotate( note_fmt, (idxNeg, idxPos), ha='center', va='center', color='black' )
+            
+    # diagonal
+    if diagonal is True :
+        for idx in np.arange(len(df)) :    
+            Lab = df.index[idx]
+            ax.annotate( Lab, (idx - .3, idx), ha='left', va='center', color='black' )
+            
+    ax.set_xticks(np.arange(-.5, len(df)+1, 1), minor=True)
+    ax.set_yticks(np.arange(-.5, len(df)+1, 1), minor=True)
+    ax.grid(which='minor', color='white', linestyle='-', linewidth=2)
+
+    plt.tick_params( axis='x', which='both', bottom=False, top=False, labelbottom=False )
+    plt.tick_params( axis='y', which='both', left=False, right=False, labelleft=False )
+
+    ax.set_yticks
+    _ = [ ax.spines[w].set_visible(False) for w in ax.spines ]
+    
+    return ax

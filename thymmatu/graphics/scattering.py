@@ -3,7 +3,7 @@
 
 '''
     Scattering
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 '''
 
 import pandas as pd 
@@ -17,7 +17,7 @@ SILVER = '#c0c0c0'
 AZURE = '#0064FF'
 PIDGEON = '#606e8c'
 
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap
 colors = ['#08457e','#0088ff',"#ef5675",'#ffff66']
 cmap1 = LinearSegmentedColormap.from_list("mycmap", colors)
 

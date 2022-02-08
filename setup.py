@@ -13,7 +13,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     version='0.0.3',
-    description='Python package to standard statbiophys analysis.',
+    description='Python packagefor statbiophys group analysis.',
     license="GNU GPLv3",
     python_requires='>=3.5',
     install_requires = [
@@ -24,7 +24,7 @@ setuptools.setup(
         "mpmath",
         "tqdm",
         "kamapack",
-        #"sonnia",
+        "joblib",
     ],
     packages=setuptools.find_packages(),
     data_files = data_files_to_include,

@@ -1,11 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''
-Common system commands.
+    Common system commands.
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 '''
 
-import os, sys
+import os
 import operator
 import functools
-from itertools import groupby
 
 ###############
 #  FILESCOPE  #

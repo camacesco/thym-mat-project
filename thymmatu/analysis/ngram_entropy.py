@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 
     WARNING: 
     As it is, the program works only on files with the format of generated olga files.
@@ -12,7 +12,7 @@
 #  LOADING MODULES  #
 #####################
 
-import os, sys
+import os
 import pandas as pd
 import numpy as np
 import optparse
@@ -20,7 +20,7 @@ from tqdm import tqdm
 import multiprocessing
 
 from thymmatu.handle import ngrams
-from thymmatu.utils import tryMakeDir, fileScope
+from thymmatu.utils import tryMakeDir
 from thymmatu.handle.statbiophys import openOlga
 
 ##########

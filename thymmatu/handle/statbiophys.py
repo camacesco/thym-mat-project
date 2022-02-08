@@ -3,11 +3,10 @@
 
 '''
     Statbiophys
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 '''
 
-import os, sys
-import glob
+import os
 import numpy as np
 import pandas as pd
 from itertools import groupby
@@ -255,7 +254,7 @@ def getBioID_fromOlga( df, AminoAcid=True, Vgene=True, Jgene=True, sep='+' ) :
     elif tag == 'BioID_aaJ' :
         iddf[tag] = [ f'{aa}{sep}{J}' for aa,J in df[['aa','J']].values ]
     elif tag == 'BioID_VJ' :
-        iddf[tag] = [ f'{V}{sep}{J}' for aa,J in df[['V','J']].values ]   
+        iddf[tag] = [ f'{V}{sep}{J}' for V,J in df[['V','J']].values ]   
     else :
         raise IOError('At least two between AminoAcid, Vgene and Jgene must be `True`.')
    

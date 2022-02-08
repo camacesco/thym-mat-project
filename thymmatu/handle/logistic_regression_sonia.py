@@ -1,7 +1,29 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+'''
+    Sonia Regression
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
+    Adaptations from Giulio Isacchini : https://github.com/statbiophys/soNNia/blob/6d99a55cb8c6b71f0ef110f1eefccbd71f789d8d/sonnia/classifiers.py
+'''
+
 import os 
+import joblib
 import numpy as np
 import pandas as pd
-from thymmatu.utils import tryMakeDir
+from sonia.sonia_leftpos_rightpos import SoniaLeftposRightpos
+
+from tensorflow import keras
+#from tensorflow.keras.utils import to_categorical
+from sklearn.ensemble import RandomForestClassifier
+
+# to avoid warning due to encoding sonia features
+import warnings
+warnings.filterwarnings("ignore")
+# avoid tensorflow warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
+# FIXME : Binary Data 2* factor for test might not be optimal
 
 # >>>>>>>>>>>>>>>>>>>>>>>
 #  BINARY DATA PROCESS  #
@@ -14,7 +36,7 @@ class Binary_Data :
     '''
     
     def __init__( self, df_Pos=None, df_Neg=None, PERC=0.75, 
-        return_sharing=False, max_size_ratio=1., upper_bound=None, load=None ) :
+        return_sharing=False, max_size_ratio=1.5, upper_bound=None, load=None ) :
         
         if load :
             self.load( load )
@@ -40,36 +62,35 @@ class Binary_Data :
             # choice of the training data size    
             #
 
-            P_len = len(df_Pos)
-            N_len = len(df_Neg) 
+            Sizes = [len(df_Pos), len(df_Neg) ]
+            min_size = np.min(Sizes)
 
             if upper_bound == None :  
 
-                if np.max( [ P_len/N_len , N_len/P_len ] ) <= max_size_ratio :
-                    size_Pos_train = int( PERC * P_len )
-                    size_Neg_train = int( PERC * N_len ) 
-
-                elif P_len > N_len :
-                    size_Neg_train = int( PERC * N_len )  
-                    size_Pos_train = int( max_size_ratio * size_Neg_train )
-
-                else :
-                    size_Pos_train = int( PERC * P_len )
-                    size_Neg_train = int( max_size_ratio * size_Pos_train )      
+                # downsample according to the chosen parameter
+                frac_datasets = np.max(Sizes) / min_size
+                # check that the chosen parameter is valid
+                if max_size_ratio > frac_datasets : max_size_ratio = frac_datasets
+                # get vector with train sizes 
+                final_sizes = min_size * np.ones( 2 )
+                final_sizes *= ( Sizes != min_size ) * max_size_ratio + ( Sizes == min_size )
+                final_sizes = np.floor(final_sizes).astype(int)    
 
             elif upper_bound > 0 :
-                size_Pos_train = int( PERC * np.min( [ P_len, N_len, upper_bound ] ) )
-                size_Neg_train = size_Pos_train
+                final_sizes = (np.min( [ min_size, upper_bound ] ) * np.ones(2)).astype(int)
+                final_sizes = final_sizes.astype(int)
+
+            train_sizes = (PERC * final_sizes).astype(int)
 
             # Positive data
-            rand_indx = np.arange( P_len )
+            rand_indx = np.arange( Sizes[0] )
             np.random.shuffle( rand_indx )
-            self.positive = np.split( df_Pos.iloc[ rand_indx ].values, [ size_Pos_train ] )
+            self.positive = np.split( df_Pos.iloc[ rand_indx ].values, [ train_sizes[0], final_sizes[0] ] )[:2]
 
             # Negative data 
-            rand_indx = np.arange( N_len )
+            rand_indx = np.arange( Sizes[1] )
             np.random.shuffle( rand_indx )
-            self.negative = np.split( df_Neg.iloc[ rand_indx ].values, [ size_Neg_train ] )        
+            self.negative = np.split( df_Neg.iloc[ rand_indx ].values, [ train_sizes[1], final_sizes[1] ] )[:2]   
     ###        
     
     # >>>>>>>>>>
@@ -99,7 +120,7 @@ class Binary_Data :
         df = df.append(attach, ignore_index=True)
 
         attach = pd.DataFrame(self.shared)
-        attach[['Label','Use']] = 'shared', 'test'
+        attach[['Label','Use']] = 'shared', 'shared'
         df = df.append(attach, ignore_index=True)
         
         # saving
@@ -114,21 +135,37 @@ class Binary_Data :
         Where to load the dataframe
         '''
         df = pd.read_csv( f'{outpath}/binary_data.csv.gz', compression='gzip', low_memory=False, dtype=str )
-        Label_msk = df['Label']=='1'
-        Shared_msk = df['Label']=='shared'
-        Use_msk = df['Use']== 'train'
+        Pos_msk = df['Label'] == '1'
+        Neg_msk = df['Label'] == '0'
+        Shared_msk = df['Label'] =='shared'
+        Train_msk = df['Use'] == 'train'
+        Test_msk = df['Use'] == 'test'
         df.drop(columns=['Use', 'Label'], inplace=True)
-        positive_train = df[np.logical_and(Label_msk, Use_msk)].values
-        positive_test = df[np.logical_and(Label_msk, ~Use_msk)].values
+        positive_train = df[np.logical_and(Pos_msk, Train_msk)].values
+        positive_test = df[np.logical_and(Pos_msk, Test_msk)].values
         self.positive = [positive_train, positive_test]
         
-        negative_train = df[np.logical_and(~Label_msk, Use_msk)].values
-        negative_test = df[np.logical_and(~Label_msk, ~Use_msk)].values  
+        negative_train = df[np.logical_and(Neg_msk, Train_msk)].values
+        negative_test = df[np.logical_and(Neg_msk, Test_msk)].values  
         self.negative = [negative_train, negative_test]
             
-        self.shared = df[np.logical_and(Shared_msk, ~Use_msk)].values
+        self.shared = df[Shared_msk].values
 
         del df
+
+    # >>>>>>>>>>>>>>>>>>>
+    #  train/test sets  #
+    # >>>>>>>>>>>>>>>>>>>
+
+    def train( self ) :
+        x_train = np.concatenate( [ self.positive[0], self.negative[0] ] )
+        y_train = np.append( np.ones(len(self.positive[0])), np.zeros(len(self.negative[0])) )
+        return x_train, y_train
+
+    def test( self ) :
+        x_test = np.concatenate( [ self.positive[1], self.negative[1] ] )
+        y_test = np.append( np.ones(len(self.positive[1])), np.zeros(len(self.negative[1])) )
+        return x_test, y_test
 ###
 
 
@@ -137,27 +174,17 @@ class Binary_Data :
 #  CLASSIFY ON SONIA CLASS  #
 #############################
 
-from sonia.sonia_leftpos_rightpos import SoniaLeftposRightpos
-
-# to avoid warning due to encoding sonia features
-import warnings
-warnings.filterwarnings("ignore")
-# avoid tensorflow warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-
-
 class ClassifyOnSonia( object ):
     '''
     Logistic Regression over sonia features
-    
     '''
 
     # >>>>>>>>>>>>>>
     #  INITIALIZE  #
     # >>>>>>>>>>>>>>
 
-    def __init__( self, which_sonia_model=None, load_model=None, custom_pgen_model=None, 
-                 vj=False, include_indep_genes=False, include_joint_genes=True ) :
+    def __init__( self, which_sonia_model="leftright", load_model=None, custom_pgen_model=None, 
+                 vj=False, include_indep_genes=True, include_joint_genes=False ) :
         
         
         if load_model is not None :
@@ -165,27 +192,13 @@ class ClassifyOnSonia( object ):
             self.sonia_model = SoniaLeftposRightpos( load_dir = load_model )
             n_features = len(self.sonia_model.features)
             
-        elif which_sonia_model == "both" :
+        elif which_sonia_model == "leftright" :
             # Default Sonia Left to Right Position model
             self.sonia_model = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model, vj=vj,
                                                     include_indep_genes=include_indep_genes,
                                                     include_joint_genes=include_joint_genes ) 
             n_features = len(self.sonia_model.features)
-            
-        elif which_sonia_model == "alpha+beta" :
-            if len(custom_pgen_model) != 2 :
-                raise IOError('With option `alpha+beta`, option `custom_pgen_model` requires a list with the alpha and the beta model, respectively.')
-            
-            self.sonia_model = [None,None]
-            # Default Sonia Left to Right Position model for Alpha
-            self.sonia_model[0] = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model[0], vj=True,
-                                                       include_indep_genes=include_indep_genes,
-                                                       include_joint_genes=include_joint_genes )   
-            # Default Sonia Left to Right Position model for Beta   
-            self.sonia_model[1] = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model[1], vj=False,
-                                                       include_indep_genes=include_indep_genes,
-                                                       include_joint_genes=include_joint_genes )  
-            n_features = len(self.sonia_model[0].features) + len(self.sonia_model[1].features)
+
         else :            
             raise IOError('Unknwon option for `which_sonia_model`.')
         
@@ -220,7 +233,13 @@ class ClassifyOnSonia( object ):
         data_enc = np.zeros( ( len(data), self.input_size ), dtype=np.int8 )
         for i in range( len(data_enc) ): 
             data_enc[ i ][ data[ i ] ] = 1
-        
+        '''
+        # delete non informative features
+        # delete all emty feature columns 
+        data_enc = data_enc[:, ~np.all(data_enc == 0, axis = 0)]
+        # delete all full feature columns
+        data_enc = data_enc[:, ~np.all(data_enc == 1, axis = 0)]
+        '''
         return data_enc
 ###
 
@@ -229,9 +248,6 @@ class ClassifyOnSonia( object ):
 ###############################
 #  LINEAR LEFT POS RIGHT POS  #
 ###############################
-
-from tensorflow import keras
-from tensorflow.keras.utils import to_categorical
 
 # mono layer logistic regression on
 class Logistic_Sonia_LeftRight( ClassifyOnSonia ):
@@ -259,10 +275,6 @@ class Logistic_Sonia_LeftRight( ClassifyOnSonia ):
         # Once the model is created it is then configurated with losses and metrics 
         self.model.compile( optimizer=optimizer, loss=loss, metrics=metrics )
     
-    # >>>>>>>
-    #  fit  #
-    # >>>>>>>
-    
     def fit( self, x, y, batch_size=300, epochs=100, val_split=0 ) :
         '''
         Fit the keras supervised model on data x with label y encoding features of x to x_enc.
@@ -278,28 +290,46 @@ class Logistic_Sonia_LeftRight( ClassifyOnSonia ):
         self.history = self.model.fit( x_enc[ rand_indx ], y[ rand_indx ],
                                       batch_size=batch_size, epochs=epochs,
                                       verbose=0, validation_split=val_split )
- 
-    # >>>>>>>>>>>
-    #  predict  #
-    # >>>>>>>>>>>
 
     def predict( self, x ):
         x_enc = self.encode( x )
-        #
         return self.model.predict( x_enc )
-    
-    # >>>>>>>>>>
-    #  saving  #
-    # >>>>>>>>>>
     
     def save( self, outpath ) :
         self.model.save( outpath )
-    
-    # >>>>>>>>>>
-    #  saving  #
-    # >>>>>>>>>>
     
     def load_model( self, outpath ) :
         self.model = keras.models.load_model( outpath )
         
 ###
+
+##############################
+#  RANDOM FOREST CLASSIFIER  #
+##############################
+
+
+class Random_Forest( ClassifyOnSonia ):
+    '''
+    Random Forest Classifier over sonia features.
+    '''
+
+    def update_model_structure( self, n_estimators=100 ) :
+        self.model = RandomForestClassifier( n_estimators=n_estimators )
+
+    def fit( self, x, y ) :
+        x_enc = self.encode( x )
+        
+        rand_indx = np.arange( len(y) )
+        np.random.shuffle( rand_indx )
+        
+        self.history = self.model.fit( x_enc[ rand_indx ], y[ rand_indx ] )
+
+    def predict( self, x ):
+        x_enc = self.encode( x )
+        return self.model.predict_proba( x_enc )
+
+    def save( self, outpath ) :
+        joblib.dump( self.model, outpath )
+    
+    def load_model( self, outpath ) :
+        self.model = joblib.load( outpath )

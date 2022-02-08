@@ -3,7 +3,7 @@
 
 '''
     Markov Ngrams (in development)
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 '''
 
 import numpy as np

@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 '''
-    Easy Plot
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Easy Plot (deprecated)
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 '''
 
-import pandas
 import numpy as np
 from thymmatu.graphics import unihists as UH
 

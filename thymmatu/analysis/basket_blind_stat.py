@@ -3,14 +3,13 @@
 
 '''
     Basket Blind Stat (exec)
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 '''
 
 #####################
 #  LOADING MODULES  #
 #####################
 
-import os, sys
 import glob
 import pandas as pd
 import numpy as np

@@ -3,18 +3,13 @@
 
 '''
     Ngrams
-    Copyright (C) November 2021 Francesco Camaglia, LPENS 
+    Copyright (C) February 2022 Francesco Camaglia, LPENS 
 '''
 
-import os, sys
-import gzip
+import warnings
 import numpy as np
 import pandas as pd
-
-import warnings
-
 import string
-import itertools
 import multiprocessing
 
 from thymmatu.utils import fileScope, reduceList
@@ -223,7 +218,7 @@ class ngram_gear:
             else :
                 file_output = file_output + ".csv.gz"
         else : 
-            raise IOError( 'Unrecognized filename : ' + fileout )
+            raise IOError( 'Unrecognized filename : ' + file_output )
 
         self.data_hist.to_csv( file_output, header=False, index=True, sep=",", compression="gzip" )        
     ###

@@ -254,7 +254,7 @@ def inSequence( thisSeq, num, skip, beg, end ):
     first_indx = beg
     last_indx = len( thisSeq ) - end - num
     
-    return [ thisSeq[ i : num + i ] for i in range ( first_indx , 1 + last_indx , 1 + skip ) ]  
+    return [ thisSeq[ i : num+i ] for i in range ( first_indx , 1+last_indx , 1+skip ) ]  
 ###
 
 
@@ -293,3 +293,53 @@ def load_file_dict( file_input ) :
     
     return num, alph, df
 ###
+
+############################
+#  ENCODE NGRAM FROM WORD  #
+############################
+
+def encode_ngram_from_word( word_list, code, size, beg=2, end=1, skip=0 ) :
+    '''Encodeds the ngrams according to a given code.'''
+    assert type(word_list) == list 
+
+    skip +=1
+    # conversion vector
+    converter = np.power(len(code), np.arange(size))
+
+    output = []
+    for word in word_list :
+        # digitize words with provided code
+        digitized = [ code[c] for c in word ] 
+        # matrix with digitized ngrams in column
+        ngram_mtx = []
+        for idx in np.arange(size) :
+            i = idx + beg
+            f = (1+idx-size-end) if (1+idx-size-end) !=0 else None
+            ngram_mtx.append( digitized[i:f:skip] )
+        output.append( converter.dot(np.array(ngram_mtx)).tolist() )
+        
+    return output
+
+
+###################
+#  DECODE NGRAMS  #
+###################
+
+def decode_ngrams( encoded_word_list, code, size ) :
+    '''Decodes ngrams according to the given code.'''
+    assert np.max(encoded_word_list) < np.power(len(code),size)
+    converter = np.power(len(code), np.arange(size))
+    inv_code = {v: k for k, v in code.items()}
+
+    # reconstruct the digitizzed ngram matrix
+    tmp = np.array(encoded_word_list)
+    ngram_mtx_upside_down = []
+    for idx in np.arange(size) :
+        div = converter[-idx-1]
+        ngram_mtx_upside_down.append( np.floor( tmp / div ).astype(int) )
+        tmp = np.mod(tmp, div)
+    ngram_mtx = np.flipud(ngram_mtx_upside_down)
+    # convert back from digits to alphabet
+    alph_mtx = np.vectorize(lambda k : inv_code[k])(ngram_mtx)
+
+    return [ ('').join(x) for x in alph_mtx.T ]

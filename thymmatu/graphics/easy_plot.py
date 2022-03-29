@@ -24,6 +24,10 @@ _kol_dic_ = {'cerulean': '#08457e',  'eggplant': '#991199', 'magenta':  '#FF0066
              'azure': '#0088ff', 'sulfur': '#ffff66'}
 _kol_ = [ c for c in _kol_dic_.values() ]
 
+# Fillatreau palette
+temp = [ 'tomato', 'darkgoldenrod', 'olivedrab', 'limegreen', 'mediumaquamarine', 
+        'deepskyblue', 'cornflowerblue', 'mediumorchid', 'deeppink' ]
+Fillalette = { k : colors.CSS4_COLORS[ k ] for k in temp }
 
 '''
 What follows is kind old and should be checked.

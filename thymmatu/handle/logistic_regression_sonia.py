@@ -15,6 +15,7 @@ from sonia.sonia_leftpos_rightpos import SoniaLeftposRightpos
 
 from tensorflow import keras
 #from tensorflow.keras.utils import to_categorical
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import RandomForestClassifier
 
 # to avoid warning due to encoding sonia features
@@ -174,6 +175,21 @@ class Binary_Data :
 #  CLASSIFY ON SONIA CLASS  #
 #############################
 
+def custom_sonia_encoder( X, sonia_model=None ) :
+
+    if sonia_model is None :
+        raise IOError("Specify a Sonia model.")
+    data =  np.array(  list(map(lambda i : sonia_model.find_seq_features(i), X)) )
+
+    # Number of feautures associated to each sequence according to the model
+    input_size = len(sonia_model.features)
+    data_enc = np.zeros( ( len(data), input_size ), dtype=np.int8 )
+    for i in range( len(data) ) :
+        data_enc[i][ data[i] ] = 1
+
+    return data_enc
+
+
 class ClassifyOnSonia( object ):
     '''
     Logistic Regression over sonia features
@@ -186,12 +202,15 @@ class ClassifyOnSonia( object ):
     def __init__( self, which_sonia_model="leftright", load_model=None, custom_pgen_model=None, 
                  vj=False, include_indep_genes=True, include_joint_genes=False ) :
         
-        
+        # <<<<<<<<<<<<<<<<<<
+        # Load Sonia Model #
+        # >>>>>>>>>>>>>>>>>>
+
         if load_model is not None :
             # load model from directory
             self.sonia_model = SoniaLeftposRightpos( load_dir = load_model )
             n_features = len(self.sonia_model.features)
-            
+
         elif which_sonia_model == "leftright" :
             # Default Sonia Left to Right Position model
             self.sonia_model = SoniaLeftposRightpos( custom_pgen_model=custom_pgen_model, vj=vj,
@@ -201,46 +220,18 @@ class ClassifyOnSonia( object ):
 
         else :            
             raise IOError('Unknwon option for `which_sonia_model`.')
-        
-        self.which_sonia_model = which_sonia_model
-        
+                
         # Number of feautures associated to each sequence according to the model
         self.input_size = n_features
         
-    ###
-    
-    '''
-    Methods
-    '''
-               
-    # >>>>>>>>>>
-    #  encode  #
-    # >>>>>>>>>>
+        # <<<<<<<<<<<<<<<<<<
+        # Define Encoder #
+        # >>>>>>>>>>>>>>>>>>
 
-    def encode( self, aa_V_J ):
-        '''
-        Extract features from sequence in `aa_V_J` according to sonia model
-        '''
-        
-        aa_V_J = np.array(aa_V_J)
-        
-        if self.which_sonia_model in ["alpha+beta"] :
-            data = list(map(lambda x : self.sonia_model[0].find_seq_features(x[0:3]) + self.sonia_model[1].find_seq_features(x[4:-1]) , aa_V_J))
-        else :     
-            data = list(map(lambda x : self.sonia_model.find_seq_features(x), aa_V_J))
-            
-        data = np.array( data )
-        data_enc = np.zeros( ( len(data), self.input_size ), dtype=np.int8 )
-        for i in range( len(data_enc) ): 
-            data_enc[ i ][ data[ i ] ] = 1
-        '''
-        # delete non informative features
-        # delete all emty feature columns 
-        data_enc = data_enc[:, ~np.all(data_enc == 0, axis = 0)]
-        # delete all full feature columns
-        data_enc = data_enc[:, ~np.all(data_enc == 1, axis = 0)]
-        '''
-        return data_enc
+        self.encoder = FunctionTransformer(
+            custom_sonia_encoder,
+            kw_args={"sonia_model": self.sonia_model}
+            )
 ###
 
 
@@ -281,7 +272,7 @@ class Logistic_Sonia_LeftRight( ClassifyOnSonia ):
         It shuffles data automatically.
         '''
         
-        x_enc = self.encode( x )
+        x_enc = self.encoder.transform( x )
         
         # shuffle indeces
         rand_indx = np.arange( len(y) )
@@ -292,7 +283,7 @@ class Logistic_Sonia_LeftRight( ClassifyOnSonia ):
                                       verbose=0, validation_split=val_split )
 
     def predict( self, x ):
-        x_enc = self.encode( x )
+        x_enc = self.encoder.transform( x )
         return self.model.predict( x_enc )
     
     def save( self, outpath ) :
@@ -317,7 +308,7 @@ class Random_Forest( ClassifyOnSonia ):
         self.model = RandomForestClassifier( n_estimators=n_estimators )
 
     def fit( self, x, y ) :
-        x_enc = self.encode( x )
+        x_enc = self.encoder.transform( x )
         
         rand_indx = np.arange( len(y) )
         np.random.shuffle( rand_indx )
@@ -325,7 +316,7 @@ class Random_Forest( ClassifyOnSonia ):
         self.history = self.model.fit( x_enc[ rand_indx ], y[ rand_indx ] )
 
     def predict( self, x ):
-        x_enc = self.encode( x )
+        x_enc = self.encoder.transform( x )
         return self.model.predict_proba( x_enc )
 
     def save( self, outpath ) :

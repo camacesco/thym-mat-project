@@ -11,7 +11,10 @@ import pandas as pd
 import multiprocessing
 
 class markov_class() :
-    def __init__(self, length, markov_matrix=None, n_states=None, uniform=False) :
+    def __init__(
+        self, length,
+        markov_matrix=None, n_states=None, uniform=False
+        ) :
 
         try :
             self.length = int(length)
@@ -29,6 +32,7 @@ class markov_class() :
         else :
             # FIXME: add a check
             assert markov_matrix.shape[0] == markov_matrix.shape[1]
+            markov_matrix = normalize_matrix(markov_matrix) #FIXME: raise warning
             self.markov_matrix = markov_matrix
             self.n_states = len(markov_matrix)
             self.is_uniform = np.all(markov_matrix == np.mean(markov_matrix))
@@ -84,10 +88,7 @@ class markov_class() :
         return output
 
     def exact_shannon( self, ) :
-        '''
-        Computation of the Shannon entropy for L-grams generated through a Markov chain
-        with transition matrix equal to `MarkovMatrix`.
-        '''
+        '''exact Shannon entropy with stationary state as initial.'''
 
         L = self.length
         sstate = self.statState(  )
@@ -97,6 +98,11 @@ class markov_class() :
             S_ex += (L - 1) * entr_operator( self.markov_matrix ).dot( sstate )[0]
 
         return S_ex
+
+
+    def exact_kullbackleibler( self, markov_obj2 ) :
+        '''exact Kullback-Leibler divergence with stationary states as initial.'''
+        return exact_kullbackleibler( self, markov_obj2 )
 
 #    
 def _produce_Markov_counts_aux_( MarkovMatrix, L, N, blank, seed ) :
@@ -144,11 +150,9 @@ def entr_operator( x ) :
     '''Sum over the rows of x * log(x).'''
     return np.sum( probLogprob(x,x), axis=0)
 
-
 def cross_entr_operator( x, y ) :
     '''Sum over the rows of x * log(y).'''
     return np.sum( probLogprob(x,y), axis=0)
-
 
 def exact_kullbackleibler( markov_obj1, markov_obj2 ) :
     '''

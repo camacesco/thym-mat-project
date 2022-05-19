@@ -9,6 +9,7 @@
 import os
 import operator
 import functools
+import numpy as np
 
 ###############
 #  FILESCOPE  #
@@ -54,7 +55,44 @@ class fileScope:
             raise IOError("Input file extension not recognized: please provide a delimiter.")
 ###
 
+##############################
+#  AVERAGE AND STD DEVIATION  #
+##############################
 
+def avg_and_std(values, weights=None, ddof=0):
+    '''
+    Return the weighted average and standard deviation.
+
+    values, weights -- Numpy ndarrays with the same shape.
+    '''
+
+    average = np.average(values, weights=weights)
+    # Fast and numerically precise:
+    variance = np.average( np.power(values-average,2), weights=weights)
+    assert ddof < len(values)
+    variance /= 1 - ddof / len(values)
+    return (average, np.sqrt(variance))
+
+#######################
+#  NON UNIFORM ROUND  #
+#######################
+
+def non_unif_round( values, digits=None, ) :
+
+    decimal_values = values - np.floor(values)
+
+    if np.any(digits) == None :
+        mydigits = np.abs(np.floor(np.log10(np.abs(decimal_values)))).astype(np.int8)
+    else :
+        assert len(values) == len(digits)
+        mydigits = digits
+
+    rounded_values = np.array(list(map( lambda x : np.round(x[0], x[1]), zip(values.ravel(), mydigits.ravel()))))
+    rounded_values = rounded_values.reshape( values.shape )
+    if np.any(digits) == None :
+        return rounded_values, mydigits
+    else :
+        return rounded_values
 
 ################
 #  REDUCELIST  #

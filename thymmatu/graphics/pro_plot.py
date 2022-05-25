@@ -8,7 +8,7 @@
 '''
 
 import numpy as np
-
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from matplotlib import cm
@@ -269,22 +269,30 @@ def curvePlotter( dataframe, colors,
 #  HEATMAP TABLE  #
 ###################
 
-def heatmap_table( df, cmap=cm.magma, norm=Normalize(vmin=0, vmax=1), figsize=None, digits=3, diagonal=False ) :
-    
-    assert np.all( df.columns == df.index )
-        
+# FIXME:
+
+def heatmap_table( df, notes=None, cmap=cm.magma, norm=Normalize(vmin=0, vmax=1), figsize=None, digits=3, diagonal=False ) : 
+
     fig, ax = plt.subplots( figsize=figsize )
-    _ = ax.imshow( df.values, cmap=cmap, norm=norm, aspect='auto', interpolation='nearest', origin='upper' )
+    this_im = ax.imshow( df.values, cmap=cmap, norm=norm, aspect='auto', interpolation='nearest', origin='upper' )
     df = df.fillna("NaN")
 
-    for idxNeg, idxPos in product( np.arange(len(df)), np.arange(len(df)) ) :    
+    if notes is not None :
+        assert np.all(notes.index == df.index)
+        assert np.all(notes.shape == df.shape)
+    else :
+        notes = pd.DataFrame(
+            [ f"{x:.{digits}f}" for x in df.values ],
+            index=df.index, columns=df.columns,
+            )
+
+    for idxNeg, idxPos in product( range(df.shape[0]), range(df.shape[1])) :    
         LabPos = df.index[idxPos]
         LabNeg = df.index[idxNeg]
         
-        note = df.at[LabPos,LabNeg]
-        if note != "NaN" :
-            note_fmt = f"{note:.{digits}f}"
-            ax.annotate( note_fmt, (idxNeg, idxPos), ha='center', va='center', color='black' )
+        note = notes.at[LabPos,LabNeg]
+        if df.at[LabPos,LabNeg] != "NaN" :
+            ax.annotate( note, (idxNeg, idxPos), ha='center', va='center', color='black' )
             
     # diagonal
     if diagonal is True :
@@ -302,4 +310,45 @@ def heatmap_table( df, cmap=cm.magma, norm=Normalize(vmin=0, vmax=1), figsize=No
     ax.set_yticks
     _ = [ ax.spines[w].set_visible(False) for w in ax.spines ]
     
-    return ax
+    return ax, this_im
+
+###################
+#  HEATMAP TABLE  #
+###################
+
+# FIXME:
+
+def heatmap_serie( df, notes=None, cmap=cm.magma, norm=Normalize(vmin=0, vmax=1), figsize=None, digits=3 ) :
+    
+    fig, ax = plt.subplots( figsize=figsize )
+    this_im = ax.imshow(
+        [ df.values, [np.nan] *len(df.values) ],
+        cmap=cmap, norm=norm, aspect='auto', interpolation='nearest', origin='upper' )
+    df = df.fillna("NaN")
+
+    if notes is not None :
+        assert np.all(notes.index == df.index)
+        assert np.all(notes.shape == df.shape)
+    else :
+        notes = pd.Series( [ f"{x:.{digits}f}" for x in df.values ], index=df.index )
+
+    for idx in np.arange(len(df)) :    
+        Lab = df.index[idx]
+        
+        note = notes.at[Lab]
+        if note != "NaN" :
+            ax.annotate( note, (idx, 0), ha='center', va='center', color='black' )
+
+        Lab = df.index[idx]
+        ax.annotate( Lab, (idx, 1), ha='center', va='center', color='black' )
+
+    ax.set_xticks(np.arange(-.5, len(df), 1), minor=True)
+    ax.grid(which='minor', color='white', linestyle='-', linewidth=2)
+
+    plt.tick_params( axis='x', which='both', bottom=False, top=False, labelbottom=False )
+    plt.tick_params( axis='y', which='both', left=False, right=False, labelleft=False )
+
+    ax.set_yticks
+    _ = [ ax.spines[w].set_visible(False) for w in ax.spines ]
+    
+    return ax, this_im

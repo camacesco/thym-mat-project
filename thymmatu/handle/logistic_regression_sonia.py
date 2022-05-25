@@ -266,7 +266,7 @@ class Logistic_Sonia_LeftRight( ClassifyOnSonia ):
         # Once the model is created it is then configurated with losses and metrics 
         self.model.compile( optimizer=optimizer, loss=loss, metrics=metrics )
     
-    def fit( self, x, y, batch_size=300, epochs=100, val_split=0 ) :
+    def fit( self, x, y, val_data=None, batch_size=300, epochs=100, val_split=0 ) :
         '''
         Fit the keras supervised model on data x with label y encoding features of x to x_enc.
         It shuffles data automatically.
@@ -280,7 +280,8 @@ class Logistic_Sonia_LeftRight( ClassifyOnSonia ):
         # fit to the model
         self.history = self.model.fit( x_enc[ rand_indx ], y[ rand_indx ],
                                       batch_size=batch_size, epochs=epochs,
-                                      verbose=0, validation_split=val_split )
+                                      verbose=0, validation_data=val_data, 
+                                      validation_split=val_split )
 
     def predict( self, x ):
         x_enc = self.encoder.transform( x )

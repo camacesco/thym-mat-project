@@ -77,18 +77,31 @@ def avg_and_std(values, weights=None, ddof=0):
 #  NON UNIFORM ROUND  #
 #######################
 
-def non_unif_round( values, digits=None, ) :
+def non_unif_round( values, digits=None, str_fmt=False, fmt_dig=0) :
 
-    decimal_values = values - np.floor(values)
+    floor_values = np.floor(values)
+    decimal_values = values - floor_values
+    mask = decimal_values > 0
 
     if np.any(digits) == None :
-        mydigits = np.abs(np.floor(np.log10(np.abs(decimal_values)))).astype(np.int8)
+        mydigits = np.zeros(len(values), dtype=int)
+        mydigits[mask] = np.abs(np.floor(np.log10(np.abs(decimal_values[mask])))).astype(np.int8)
     else :
         assert len(values) == len(digits)
         mydigits = digits
 
-    rounded_values = np.array(list(map( lambda x : np.round(x[0], x[1]), zip(values.ravel(), mydigits.ravel()))))
-    rounded_values = rounded_values.reshape( values.shape )
+    if str_fmt is True :
+        new_values = list(map(
+            lambda x : f"{x[0]:.{fmt_dig}e}" if x[1] > 2 else f"{x[0]:.{x[1]+1}f}", 
+            zip(values.ravel(), mydigits.ravel())
+            ))
+    else :
+        new_values = list(map(
+            lambda x : np.round(x[0], x[1]+fmt_dig),
+            zip(values.ravel(), mydigits.ravel())
+            ))
+    rounded_values = np.array(new_values).reshape( values.shape )
+
     if np.any(digits) == None :
         return rounded_values, mydigits
     else :

@@ -27,7 +27,7 @@ from scipy.spatial.distance import squareform
 #  DENDROGRAM  #
 ################
 
-def Dendrogram(df, method="ward", cmap=cm.magma, figsize=(8,8), fontsize=30) :
+def Dendrogram(df, method="ward", cmap=cm.magma, figsize=(8,8), fontsize=30, cbar_label="") :
     '''
     It reorders a distance matrix `df` according to HAC and plots it with its respective argument.
     The HAC `method` can be specified.
@@ -51,12 +51,15 @@ def Dendrogram(df, method="ward", cmap=cm.magma, figsize=(8,8), fontsize=30) :
     g.ax_row_dendrogram.set_visible(False)
     g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize=fontsize)
     g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_ymajorticklabels(), fontsize=fontsize)
+    g.cax.set_ylabel(cbar_label, fontsize=fontsize)
     g.cax.yaxis.set_ticks_position("left")
     g.cax.yaxis.set_label_position('left')
     dendro_box = g.ax_row_dendrogram.get_position()
     dendro_box.x0 = (dendro_box.x0 + 2 * dendro_box.x1) / 3 -0.01
     dendro_box.x1 = dendro_box.x1-0.01
     g.cax.set_position(dendro_box)
+
+    return g
 
 #################
 #  BAR PLOTTER  #

@@ -284,10 +284,7 @@ def heatmap_table( df, notes=None, cmap=cm.magma, norm=Normalize(vmin=0, vmax=1)
         assert np.all(notes.index == df.index)
         assert np.all(notes.shape == df.shape)
     else :
-        notes = pd.DataFrame(
-            [ f"{x:.{digits}f}" for x in df.values ],
-            index=df.index, columns=df.columns,
-            )
+        notes = df.applymap( lambda x : f"{x:.{digits}f}" if x != "NaN" else "NaN" )
 
     for idxNeg, idxPos in product( range(df.shape[0]), range(df.shape[1])) :    
         LabPos = df.index[idxPos]

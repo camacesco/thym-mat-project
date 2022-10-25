@@ -56,7 +56,7 @@ def main( ) :
     
     #  OUTPUTFILE  
     PathToOut = f"{BASKET}/STAT"
-    
+
     if tag is None : 
         inputfileList = glob.glob( f"{BASKET}/*.*" )
         outputfile = f"{PathToOut}/mean." + ('.').join( inputfileList[0].split('.')[1:] )

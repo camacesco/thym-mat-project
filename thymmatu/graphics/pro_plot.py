@@ -65,9 +65,9 @@ def Dendrogram(df, method="ward", cmap=cm.magma, figsize=(8,8), fontsize=30, cba
 #  BAR PLOTTER  #
 #################
 
-def barPlotter( dataframe, colors,
+def barPlotter( dataframe, colors, custom_Axe=None,
                columns=None, figsize=None, errorbars=None, rotation=90,
-               hatch=None, grid=False, legend=False ) :
+               hatch=None, grid=False, legend=False, lw=1 ) :
     '''
     '''
     
@@ -104,9 +104,11 @@ def barPlotter( dataframe, colors,
         
     #  errorbars
     if errorbars is not None :
-        if np.any( [c not in df.columns for c in errorbars] ) :
-            raise KeyError( "Some requested `errorbars` are not in `dataframe`." )
-            
+        for c in errorbars :
+            if (c is not None) and ( c not in df.columns ) :
+                raise KeyError( f"requested errorbar `{c}` is not in dataframe." )
+    else :
+        errorbars = [None] * len(columns)
     # rotation
     rotation = int(rotation)
     
@@ -130,9 +132,11 @@ def barPlotter( dataframe, colors,
     # >>>>>>>>>>>>
     #  PLOTTING  #
     # >>>>>>>>>>>>    
-    
-    fig, ax = plt.subplots( nrows=1, ncols=1, figsize=figsize,
-                           subplot_kw={'adjustable':'box'} )
+    if custom_Axe is None :
+        fig, ax = plt.subplots( nrows=1, ncols=1, figsize=figsize,
+                            subplot_kw={'adjustable':'box'} )
+    else :
+        ax = custom_Axe
 
     x = np.arange(0.5, len(df.index)+0.5)
     breaks = np.linspace(0, 1, len(columns)+2) - 0.5
@@ -140,12 +144,13 @@ def barPlotter( dataframe, colors,
 
     ylim_min, ylim_max = [], []
     for i, col in enumerate(columns) :
-        ax.bar( x + breaks[i+1], df[col], hatch=hatch[i], edgecolor='white', lw=0.5,
+        ax.bar( x + breaks[i+1], df[col], hatch=hatch[i], edgecolor='white', lw=lw,
                 width=width, color=colors[i], label=col, zorder=1 )  
-        if errorbars is not None :
+
+        if errorbars[i] is not None :
             err_col = errorbars[i]
-            ax.errorbar( x + breaks[i+1], df[col], yerr=df[err_col], 
-                        ls="", color="black", fmt='', label="")
+            ax.errorbar( x + breaks[i+1], df[col], yerr=df[err_col], lw=lw,
+                            ls="", color="black", fmt='', label="")
             ylim_min.append( np.min( df[col] - df[err_col] ) )
             ylim_max.append( np.max( df[col] + df[err_col] ) )
         else :
@@ -180,9 +185,9 @@ def barPlotter( dataframe, colors,
 #  CURVE PLOTTER  #
 ###################
 
-def curvePlotter( dataframe, colors,
-               columns=None, figsize=None, errorbars=None, 
-               grid=False, legend=False, linestyle="-" ) :
+def curvePlotter( dataframe, colors, custom_Axe=None,
+               columns=None, figsize=None, errorbars=None, markerstyle="o",
+               grid=False, legend=False, linestyle="-", fill_error=False, zorder=None, lw=1 ) :
     '''
     '''
     
@@ -216,7 +221,14 @@ def curvePlotter( dataframe, colors,
             raise IOError( "Wrong choice for `figsize` format." )
     else : # default   
         figsize = ( 6, 4 )
-        
+
+    #  markerstyle 
+    if len(markerstyle) == 1 :
+        markerstyle = list(markerstyle) * len(columns)
+    elif len(markerstyle) < len(columns) :
+        markerstyle = list(markerstyle) * int( 1+np.ceil( len(columns)/len(markerstyle)-1 ) )
+        markerstyle = markerstyle[:len(columns)]
+
     #  linestyle 
     if len(linestyle) == 1 :
         linestyle = list(linestyle) * len(columns)
@@ -228,31 +240,57 @@ def curvePlotter( dataframe, colors,
     if errorbars is not None :
         if np.any( [c not in df.columns for c in errorbars] ) :
             raise KeyError( "Some requested `errorbars` are not in `dataframe`." )
-                    
+
+    # zorder
+    if zorder is None :
+        zorder = [1] * len(columns)      
+    elif len(zorder) == 1 :
+        zorder = list(zorder) * len(columns)
+    elif len(zorder) < len(columns) :
+        zorder = list(zorder) * int( 1+np.ceil( len(columns)/len(zorder)-1 ) )
+        zorder = zorder[:len(columns)]
+
     # grid
     grid = bool(grid)
     
     # legend
     legend = bool(legend)
-        
-        
+
     # >>>>>>>>>>>>
     #  PLOTTING  #
     # >>>>>>>>>>>>    
-    
-    fig, ax = plt.subplots( nrows=1, ncols=1, figsize=figsize,
-                           subplot_kw={'adjustable':'box'} )
+    if custom_Axe is None :
+        fig, ax = plt.subplots( nrows=1, ncols=1, figsize=figsize,
+                            subplot_kw={'adjustable':'box'} )
+    else :
+        ax = custom_Axe
 
     x = df.index.values
 
+    ylim_min, ylim_max = [], []
     for i, col in enumerate(columns) :
-        ax.plot( x, df[col], linestyle=linestyle[i], lw=1,
-                color=colors[i], label=col, zorder=1 )  
+        y = df[col]
+        ax.plot( x, y, linestyle=linestyle[i], lw=lw, marker=markerstyle[i],
+                color=colors[i], label=col, zorder=zorder[i] )  
+
         if errorbars is not None :
             err_col = errorbars[i]
-            ax.errorbar( x, df[col], yerr=df[err_col], 
-                        ls="", color=colors[i], fmt='o', label="")
+            yerr = df[err_col]
+            if fill_error is True :
+                ax.fill_between( x, y-yerr, y+yerr, color=colors[i], alpha=0.5, edgecolor=None, zorder=zorder[i], )
+            
+            ax.errorbar( x, y, yerr=yerr, label=col, zorder=zorder[i], 
+                        ls=linestyle[i], lw=lw, color=colors[i], fmt='' )
+         
+            ylim_min.append( np.min( y - yerr ) )
+            ylim_max.append( np.max( y + yerr ) )
 
+        else :
+            ylim_min.append( np.min( y ) )
+            ylim_max.append( np.max( y ) )
+    # lim
+    ax.set_ylim( [ 0.98 * np.min( ylim_min ), 1.02* np.max( ylim_max ) ] )
+    
     # grid
     if grid is True :
         ax.yaxis.grid(which="both", color=_greys_dic_["silver"], ls='--', zorder=-10)

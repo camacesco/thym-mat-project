@@ -10,14 +10,26 @@ import numpy as np
 import pandas as pd
 import multiprocessing
 from scipy.special import zeta
-from kamapack._aux_definitions import get_from_implicit
+from scipy import optimize
 from tqdm import tqdm
 
-# FIXME : jupyter bug multiprocessing auxiliary definition
-from kamapack.default_divergence import Dirichlet
-def func_Dirichlet( a, b, compACT ) : 
-    return Dirichlet(compACT, a=a, b=b)
-# FIXME :
+# <<<<<<<<<<<<<<<<<<
+#  IMPLICIT SOLVER #
+# >>>>>>>>>>>>>>>>>> 
+
+def get_from_implicit_( implicit_relation, y, lower, upper, *args,
+                      maxiter=100, xtol=1.e-20 ):
+    '''
+    Find the root of the implicit relation for x in (0, infty):  
+    >    `implicit relation` ( x, *args ) - `y` = 0
+    It uses the Brent's algorithm for the root finder in the interval (lower, upper)
+    '''   
+
+    # FIXME : the implicit_relation must have opposite signs in lower and upper  
+
+    output = optimize.brentq( implicit_relation, lower, upper,
+                            args=( y , *args ), xtol=xtol, maxiter=maxiter )
+    return output
 
 class zipf_class() :
 
@@ -30,14 +42,13 @@ class zipf_class() :
         # input check #
         assert n_min >= 1
         assert gamma > 1
-        if n_max is not None :
-            try : n_max = int(n_max)
-            except : raise TypeError("n_max") # FIXME
 
         if rank is None :
             if n_max is None :
-                pass
+                pass # case n not bounded
             else :
+                try : n_max = int(n_max)
+                except : raise TypeError("`n_max` must be a scalar type.")
                 rank = np.arange(n_min, n_max)
         else :
             n_min = np.min(rank)
@@ -57,7 +68,7 @@ class zipf_class() :
         if self.n_max is not None :
             norm -= zeta(gamma, self.n_max)
 
-        return 1. / ( np.power(n, gamma) * norm )
+        return np.power(n, - gamma) / norm
 
     def exact_shannon( self, ) :
         '''Exact entropy for a Zipf's law (natural log).'''
@@ -84,7 +95,6 @@ class zipf_class() :
 
 def _zipf_rand_gen( zipf_obj, size, verbose=False ):
     '''Zipf's law approximate random number generator.'''
-    disable = not verbose
 
     gamma, n_min, n_max = zipf_obj.gamma, zipf_obj.n_min, zipf_obj.n_max
 
@@ -93,15 +103,15 @@ def _zipf_rand_gen( zipf_obj, size, verbose=False ):
     rnd_vec = np.random.rand(size)
     args = [ (_implict_cdf_zipf, r, n_min, n_max, gamma, t_1, t_2) for r in rnd_vec ]
     POOL = multiprocessing.Pool( multiprocessing.cpu_count() )  
-    params = POOL.starmap( get_from_implicit, tqdm(args, total=len(args), desc='Generation', disable=disable) )
+    params = POOL.starmap( get_from_implicit_, tqdm(args, total=len(args), desc='Generation', disable=(not verbose)) )
     POOL.close()
     return np.floor(np.asarray( params )).astype(int)
+
 
 def _implict_cdf_zipf(x, r, gamma, t_1, t_2 ) :
     '''auxiliary: implicit relation to be inverted for transform method.'''
     norm = t_1 - t_2
     return (t_1 - zeta(gamma, x)) - r * norm
-
 
 
 def exact_kullbackleibler(zipf_obj1, zipf_obj2, ) :

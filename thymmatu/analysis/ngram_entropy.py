@@ -115,6 +115,7 @@ def main( ) :
         # Default name  
         if os.path.dirname( inputfile ) != "" : 
             FLDR = os.path.dirname( inputfile )
+            tryMakeDir( FLDR )
         else : 
             FLDR = "."
         outputfile = f"n{num}-{alph}-s{skip}-b{beg}e{end}"

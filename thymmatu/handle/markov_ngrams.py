@@ -3,12 +3,14 @@
 
 '''
     Markov Ngrams (in development)
-    Copyright (C) Augusut 2022 Francesco Camaglia, LPENS 
+    Copyright (C) October 2022 Francesco Camaglia, LPENS 
 '''
 
 import numpy as np
 import pandas as pd
-from .ngrams import counts_generator, pmf_counts_hist_gen
+from scipy.special import entr
+
+from thymmatu.handle.ngrams import data_generator, pmf_data_hist_gen
 
 #############
 #  ALIASES  #
@@ -102,43 +104,54 @@ class markov_class() :
 
         return pd.Series(pmf, index=1+np.arange(len(pmf)))
     
-    def generate_counts( self, size, seed=None, thres=1e3 ) :
+    def generate_counts( self, size, seed=None ) :
         '''Generate histogram of `size` counts from the Markov chain itslef.'''
 
-        # FIXME : is this a good choice ?
-        if self.n_states ** self.length > 1e8 :
-            # (Old) Generate histogram of `size` counts from the Markov chain itself.
-            output = counts_generator( Markov_count_hist_gen_, size, self, seed=seed, thres=thres )
-        else :
-            if self._pmf is None :
-                self._pmf = self.pmf()
-            output = counts_generator( aux__, size, self, seed=seed, thres=thres )
+        # FIXME : 
+        # (Old) Generate histogram of `size` counts from the Markov chain itself.
+        # output = counts_generator( Markov_count_hist_gen_, size, self, seed=seed, thres=thres )
+        output = data_generator( data_hist_gen, size, self.pmf() )
+
         return output
 
     def exact_shannon( self, ) :
         '''exact Shannon entropy with stationary state as initial.'''
 
         L = self.length
-        sstate = self.statState(  )
+        sstate = self.statState( )
+        mmatrix = self.markov_matrix
 
-        S_ex = entr_operator( sstate )[0]
+        exact = entr_operator( sstate )[0]
         if L > 1 :
-            S_ex += (L - 1) * entr_operator( self.markov_matrix ).dot( sstate )[0]
+            exact += (L - 1) * entr_operator( mmatrix ).dot( sstate )[0]
 
-        return S_ex
+        return exact
+
+    def exact_simpson( self, ) :
+        '''exact Simpson index with stationary state as initial.'''
+
+        L = self.length
+        sstate2 = np.power(self.statState( ), 2)
+        mmatrix2 = np.power(self.markov_matrix, 2)
+
+        exact = sstate2
+        for _ in range(1, L, 1) :
+            exact = mmatrix2.dot( exact )
+
+        return np.sum( exact )
 
     def exact_kullbackleibler( self, markov_obj2 ) :
         '''exact Kullback-Leibler divergence with stationary states as initial.'''
-        return exact_kullbackleibler( self, markov_obj2 )
+        return _exact_kullbackleibler( self, markov_obj2 )
 
 # >>>>>>>>>>>>>>>>>>>
 #  Other Functions  #
 # <<<<<<<<<<<<<<<<<<<
 
-# FIXME : this need to be better developed withc `counts_generator`
-def aux__( seed, size, *chg_args, ) :
-    pmf = chg_args[0]._pmf.values
-    return pmf_counts_hist_gen( pmf, size=size, seed=seed )
+def data_hist_gen( seed, size, *chg_args ) :
+    '''Alias waiting for FIXME'''
+    pmf = chg_args[0]
+    return pmf_data_hist_gen( pmf, size=size, seed=seed )
 
 def Markov_count_hist_gen_( seed, size, *chg_args ) :
     # FIXME : is this correct? especially `blank`?
@@ -187,7 +200,7 @@ def Markov_count_hist_gen_( seed, size, *chg_args ) :
     return output
 
 
-def exact_kullbackleibler( markov_obj1, markov_obj2 ) :
+def _exact_kullbackleibler( markov_obj1, markov_obj2 ) :
     '''
     Computation of the Kullback_Leibler divergence for L-grams generated through Markov chains
     with transition matrices equal to `MarkovMatrix_A` and `MarkovMatrix_B`.

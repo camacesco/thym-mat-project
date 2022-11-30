@@ -3,7 +3,7 @@
 
 '''
     Ngrams
-    Copyright (C) September 2022 Francesco Camaglia, LPENS 
+    Copyright (C) October 2022 Francesco Camaglia, LPENS 
 '''
 
 import warnings
@@ -14,7 +14,7 @@ import multiprocessing
 from itertools import product
 
 from thymmatu.utils import fileScope, reduceList
-from kamapack.shannon import Experiment
+from kamapack.estimate import Experiment
 from sklearn.preprocessing import FunctionTransformer
 
 ##################################
@@ -354,7 +354,7 @@ def decode_ngrams( encoded_word_list, code_dict, word_length ) :
 #  COUNTS GENERATORS  #
 #######################
 
-def counts_generator(
+def data_generator(
     counts_hist_gen_, size, *chg_args,
     seed=None, thres=1e3, njobs=None,
      ):
@@ -391,13 +391,16 @@ def counts_generator(
     return output
 
 
-def pmf_counts_hist_gen( pmf, size=1, seed=None ) :
+def pmf_data_hist_gen( pmf, size=1, is_counts=True, seed=None ) :
     '''Counts hist generator from the probability mass function'''
     rng = np.random.default_rng( seed )
 
     sequences = rng.choice( 1+np.arange(len(pmf)), size=size, replace=True, p=pmf  )
     tmp = pd.Series( sequences ).astype(int)
-    output = tmp.groupby( tmp ).size()
+    if is_counts is True :
+        output = tmp.groupby( tmp ).size()
+    else :
+        output = tmp
     return output
 
 ######################

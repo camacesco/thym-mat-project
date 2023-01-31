@@ -109,7 +109,7 @@ class ngram_gear:
             elif alph not in list( _Alphabet_.keys( ) ) :
                 raise IOError(f"Alphabet unknown. Options are : {list(_Alphabet_.keys())}" )
             else : 
-                self.alphabet = _Alphabet_[ self.alph ][0] 
+                self.alphabet = _Alphabet_[ alph ][0] 
                 
             # assign empty data_hist
             self.data_hist = pd.Series()

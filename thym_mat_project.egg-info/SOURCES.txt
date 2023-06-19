@@ -22,5 +22,6 @@ thymmatu/handle/logistic_regression_sonia.py
 thymmatu/handle/markov_ngrams.py
 thymmatu/handle/ngrams.py
 thymmatu/handle/statbiophys.py
+thymmatu/handle/zipf_ngrams.py
 thymmatu/handle/__pycache__/__init__.cpython-38.pyc
 thymmatu/handle/__pycache__/markov_ngrams.cpython-38.pyc

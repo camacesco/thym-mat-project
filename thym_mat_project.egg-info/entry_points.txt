@@ -1,4 +1,3 @@
 [console_scripts]
 thymmatu_folder_stat = thymmatu.analysis.basket_blind_stat:main
 thymmatu_ngram_entropy = thymmatu.analysis.ngram_entropy:main
-

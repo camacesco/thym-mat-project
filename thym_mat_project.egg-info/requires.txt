@@ -4,4 +4,4 @@ matplotlib
 scipy
 mpmath
 tqdm
-kamapack
+joblib

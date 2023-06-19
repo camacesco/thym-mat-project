@@ -14,7 +14,7 @@ import multiprocessing
 from itertools import product
 
 from thymmatu.utils import fileScope, reduceList
-from kamapack.estimate import Experiment
+from catede.estimate import Experiment
 from sklearn.preprocessing import FunctionTransformer
 
 ##################################

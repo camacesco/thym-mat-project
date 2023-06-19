@@ -8,7 +8,6 @@
 
 import numpy as np
 import pandas as pd
-from scipy.special import entr
 
 from thymmatu.handle.ngrams import data_generator, pmf_data_hist_gen
 
@@ -28,7 +27,6 @@ def entr_operator( x ) :
 def cross_entr_operator( x, y ) :
     '''Sum over the rows of x * log(y).'''
     return np.sum( probLogprob(x,y), axis=0)
-
 
 class markov_class() :
     def __init__(

@@ -10,6 +10,7 @@ import os
 import operator
 import functools
 import numpy as np
+import pandas as pd
 
 ###############
 #  FILESCOPE  #
@@ -22,7 +23,8 @@ class fileScope:
     def __init__( self, fileName ):
 
         fileName=str(fileName)
-        
+        self.fileName = fileName
+
         # check wheter compressed
         if fileName.endswith('.gz'): 
             self.compression = 'gzip'
@@ -42,7 +44,7 @@ class fileScope:
         elif fileName.endswith( '.csv' + self.ext ):  
             self.ext = '.csv' + self.ext
             self.delimiter = ','
-            self.header = 0
+            self.header = 0 # FIXME: ? dtypes...
         elif fileName.endswith( '.data' + self.ext ):  
             self.ext = '.data' + self.ext
             self.delimiter = ' '
@@ -53,6 +55,15 @@ class fileScope:
             self.header = None
         else :
             raise IOError("Input file extension not recognized: please provide a delimiter.")
+
+    def read( self, index_col=None ) :
+        df = pd.read_csv( 
+            self.fileName, 
+            sep=self.delimiter, compression=self.compression, header=self.header,
+            index_col=index_col,
+            )
+        return df
+
 ###
 
 ##############################

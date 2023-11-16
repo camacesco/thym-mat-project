@@ -24,7 +24,7 @@ setuptools.setup(
         "mpmath",
         "tqdm",
         "joblib",
-        #"sonia",
+        "Levenshtein",
     ],
     packages=setuptools.find_packages(),
     data_files = data_files_to_include,

@@ -390,3 +390,46 @@ def heatmap_serie( df, notes=None, cmap=cm.magma, norm=Normalize(vmin=0, vmax=1)
     _ = [ ax.spines[w].set_visible(False) for w in ax.spines ]
     
     return ax, this_im
+
+from scipy.interpolate import interp1d
+
+########################
+#  HEATMAP LOG TICKER  #
+########################
+
+def heatmap_log_ticker( x, ax, axis='x' ) :
+    '''It add the ticks to heatmap on `ax` for values in `x` that are log-scaled.'''
+    
+    interp_func = interp1d(np.log10(x), np.arange(len(x)))
+
+    find = np.log10([x.min(), x.max()])
+    exp_range = np.array([np.ceil(find[0]), np.floor(find[1])]).astype(int)
+
+    # >>>>>>>>>>>>>>>
+    #  major ticks  #
+    # <<<<<<<<<<<<<<<
+    log10_major_ticklabels = np.arange(exp_range[0]-1, exp_range[1]+1, 1)
+    mask = (log10_major_ticklabels >= find[0]) & (log10_major_ticklabels <= find[1])
+    major_ticks = interp_func( log10_major_ticklabels[mask] )
+    major_ticklabels = np.power(10., log10_major_ticklabels[mask ])
+
+    # >>>>>>>>>>>>>>>
+    #  minor ticks  #
+    # <<<<<<<<<<<<<<<
+    tmp = np.log10(np.arange(1, 10, 1))
+    log10_minor_ticklabels = np.add.outer(log10_major_ticklabels, tmp).ravel()
+    mask = (log10_minor_ticklabels >= find[0]) & (log10_minor_ticklabels <= find[1])
+    minor_ticks = interp_func( log10_minor_ticklabels[mask] ) 
+
+    if axis == 'x' :
+        axis = ax.xaxis
+    elif axis == 'y' :
+        axis = ax.yaxis
+    else :
+        raise IOError(f"Unknown axis {axis}.")
+    
+    _ = axis.set_major_formatter('{x:.1f}')
+    _ = axis.set_ticks( minor_ticks, minor=True )
+
+    _ = axis.set_ticks( major_ticks )
+    _ = axis.set_ticklabels( major_ticklabels )

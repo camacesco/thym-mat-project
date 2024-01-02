@@ -13,6 +13,12 @@ import numpy as np
 import pandas as pd
 from sonia.sonia_leftpos_rightpos import SoniaLeftposRightpos
 
+# to avoid warning due to encoding sonia features
+import warnings
+warnings.filterwarnings("ignore")
+# avoid tensorflow warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 from tensorflow import keras
 #from tensorflow.keras.utils import to_categorical
 from sklearn.preprocessing import FunctionTransformer
